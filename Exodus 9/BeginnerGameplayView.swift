@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - Beginner Gameplay View (thin coordinator — ~200 lines)
 // All game logic lives in BeginnerGameEngine.
@@ -183,7 +184,8 @@ struct BeginnerGameplayView: View {
     }
 
     private func syncBackingTrack() {
-        guard let track = audioSettings.selectedBackingTrack else {
+        guard let trackID = audioSettings.selectedBackingTrackID,
+              let track = availableBackingTracks.first(where: { $0.id == trackID }) else {
             midiEngine.stop()
             isBackingTrackPlaying = false
             return
@@ -193,7 +195,7 @@ struct BeginnerGameplayView: View {
             isBackingTrackPlaying = false
             return
         }
-        guard let url = track.fileURL else { return }
+        guard let url = track.resourceURL() else { return }
         if !midiEngine.isPlaying {
             midiEngine.play(url: url, title: track.title, loop: true)
             isBackingTrackPlaying = midiEngine.isPlaying

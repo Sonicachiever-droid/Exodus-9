@@ -237,7 +237,7 @@ private struct GameplayControlPlateShell: View {
     }
 }
 
-private struct StartupSequenceView: View {
+private struct MaestroStartupSequenceView: View {
     enum Phase {
         case armed
     }
@@ -245,7 +245,7 @@ private struct StartupSequenceView: View {
     let elapsed: TimeInterval
 
     var body: some View {
-        let state = Self.state(for: elapsed)
+        let state = MaestroStartupSequenceView.state(for: elapsed)
         let fontSize: CGFloat = 29.6
         let fontWeight: Font.Weight = .black
 
@@ -263,6 +263,8 @@ private struct StartupSequenceView: View {
         return ("Memorization Sequence Armed", Color.green.opacity(0.98), isVisible, .armed)
     }
 }
+
+private typealias MaestroStartupState = MaestroStartupSequenceView.Phase
 
 private struct FullScreenElephantBackground: View {
     var body: some View {
@@ -618,7 +620,7 @@ private struct DeveloperConsoleFrame: View {
                                 }
 
                                 if showStartupSequence {
-                                    StartupSequenceView(elapsed: startupElapsed)
+                                    MaestroStartupSequenceView(elapsed: startupElapsed)
                                         .padding(.horizontal, 10)
                                         .padding(.top, 24)
                                         .padding(.bottom, 8)
@@ -1196,14 +1198,14 @@ struct MaestroGameplayView: View {
             let stringTopY = nutBottomY + stringStopInset
             let calibratedAssetToNutDelta = assetToNutBottomDelta ?? 0
             let _ = (nutBottomY + calibratedAssetToNutDelta) - rowOneBottomLineY
-            let startupState: (text: String, color: Color, isVisible: Bool, phase: StartupSequenceView.Phase) = {
+            let startupState: (text: String, color: Color, isVisible: Bool, phase: MaestroStartupSequenceView.Phase) = {
                 guard isCodeScreensaverMode else {
                     return ("", .clear, false, .armed)
                 }
                 guard startupSequenceActivated else {
                     return ("", .clear, false, .armed)
                 }
-                return StartupSequenceView.state(for: startupSequenceElapsed)
+                return MaestroStartupSequenceView.state(for: startupSequenceElapsed)
             }()
             let screensaverThumbState: ThumbGlowState = {
                 guard startupState.isVisible else { return .neutral }
@@ -1646,7 +1648,7 @@ struct MaestroGameplayView: View {
 
                 if startupSequenceActivated {
                     startupSequenceElapsed = max(date.timeIntervalSince(startupSequenceStartDate), 0)
-                    let startupState = StartupSequenceView.state(for: startupSequenceElapsed)
+                    let startupState = MaestroStartupSequenceView.state(for: startupSequenceElapsed)
                     handleStartupSpeech(for: startupState.phase)
                 }
 
@@ -2173,7 +2175,7 @@ struct MaestroGameplayView: View {
         showDeveloperPrompt("MENU: \(option.title)")
     }
 
-    private func handleStartupSpeech(for phase: StartupSequenceView.Phase) {
+    private func handleStartupSpeech(for phase: MaestroStartupSequenceView.Phase) {
         guard audioEngineEnabled else { return }
         switch phase {
         case .armed:
