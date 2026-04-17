@@ -1187,6 +1187,14 @@ struct BeginnerGameplayView: View {
     @StateObject private var randomNoteGenerator = RandomNoteGenerator()
     // Sequential style integration
     @StateObject private var sequentialNoteGenerator = SequentialNoteGenerator()
+    // Unified generator access — no more if/else chains at callsites
+    private var currentGenerator: any NoteSequenceGenerator {
+        switch lessonStyle {
+        case .random:      return randomNoteGenerator
+        case .sequential:  return sequentialNoteGenerator
+        case .chord:       return sequentialNoteGenerator // chord uses its own system
+        }
+    }
     @State private var correctAnswerSide: AnswerSide = .left
     @State private var isResolvingAnswer: Bool = false
     @State private var activePickedStringNumbers: [Int] = [1]
@@ -3318,81 +3326,40 @@ struct BeginnerGameplayView: View {
 
         let fret = max(currentRound, 0)
 
-        if lessonStyle == .random {
+        if lessonStyle == .random || lessonStyle == .sequential {
             guard beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 8 else {
                 beginnerRuntime.autoPlayNextDate = nil
                 return
             }
-            guard beginnerRuntime.randomRevealCount >= 6 else {
+            guard beginnerRuntime.revealCount >= GameConstants.maxRevealCount else {
                 beginnerRuntime.autoPlayNextDate = nil
                 return
             }
-            // Wait until all 6 notes have been visible for at least 1 full beat
-            let randomRevealElapsed = Int(floor(roundRevealElapsedBeats)) - (beginnerRuntime.randomRevealStartBeatBucket ?? Int(floor(roundRevealElapsedBeats)))
-            guard randomRevealElapsed >= 7 else {
+            let revealElapsed = Int(floor(roundRevealElapsedBeats)) - (beginnerRuntime.revealStartBeatBucket ?? Int(floor(roundRevealElapsedBeats)))
+            guard revealElapsed >= GameConstants.maxRevealCount + 1 else {
                 beginnerRuntime.autoPlayNextDate = nil
                 return
             }
-            guard !randomNoteGenerator.isSequenceComplete() else {
+            guard !currentGenerator.isSequenceComplete() else {
                 beginnerRuntime.autoPlayNextDate = nil
                 return
             }
-            guard let nextString = randomNoteGenerator.expectedString,
-                  let nextNote = randomNoteGenerator.currentNoteSequence.indices.contains(randomNoteGenerator.sequenceProgressIndex)
-                    ? Optional(randomNoteGenerator.currentNoteSequence[randomNoteGenerator.sequenceProgressIndex])
-                    : nil
+            let idx = currentGenerator.sequenceProgressIndex
+            guard let nextString = currentGenerator.expectedString,
+                  currentGenerator.currentNoteSequence.indices.contains(idx)
             else {
                 beginnerRuntime.autoPlayNextDate = nil
                 return
             }
-            // Use the exact string the sequence demands — no guessing
+            let nextNote = currentGenerator.currentNoteSequence[idx]
             if beginnerRuntime.autoPlayNextDate == nil {
-                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
+                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
                 return
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
             let buttonIndex = nextString >= 4 ? (nextString - 4) : (6 - nextString)
             handleBeginnerConsoleButtonPress(selectedNote: nextNote, selectedString: nextString, buttonIndex: buttonIndex)
-            beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
-            return
-        }
-
-        if lessonStyle == .sequential {
-            guard beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 8 else {
-                beginnerRuntime.autoPlayNextDate = nil
-                return
-            }
-            guard beginnerRuntime.sequentialRevealCount >= 6 else {
-                beginnerRuntime.autoPlayNextDate = nil
-                return
-            }
-            // Wait until all 6 notes have been visible for at least 1 full beat
-            let seqRevealElapsed = Int(floor(roundRevealElapsedBeats)) - (beginnerRuntime.sequentialRevealStartBeatBucket ?? Int(floor(roundRevealElapsedBeats)))
-            guard seqRevealElapsed >= 7 else {
-                beginnerRuntime.autoPlayNextDate = nil
-                return
-            }
-            guard !sequentialNoteGenerator.isSequenceComplete() else {
-                beginnerRuntime.autoPlayNextDate = nil
-                return
-            }
-            guard let nextString = sequentialNoteGenerator.expectedString,
-                  let nextNote = sequentialNoteGenerator.currentNoteSequence.indices.contains(sequentialNoteGenerator.sequenceProgressIndex)
-                    ? Optional(sequentialNoteGenerator.currentNoteSequence[sequentialNoteGenerator.sequenceProgressIndex])
-                    : nil
-            else {
-                beginnerRuntime.autoPlayNextDate = nil
-                return
-            }
-            // Use the exact string the sequence demands — no guessing
-            if beginnerRuntime.autoPlayNextDate == nil {
-                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
-                return
-            }
-            guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
-            let buttonIndex = nextString >= 4 ? (nextString - 4) : (6 - nextString)
-            handleBeginnerConsoleButtonPress(selectedNote: nextNote, selectedString: nextString, buttonIndex: buttonIndex)
-            beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
+            beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
             return
         } else {
             // Chord style: existing behavior
