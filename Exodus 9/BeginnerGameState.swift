@@ -21,13 +21,33 @@ final class BeginnerGameState {
     var roundOneSequenceStartDate: Date? = nil
     var answerBoxReady: Bool = false
 
+    // MARK: Reveal aliases (random & sequential share the unified counters)
+    var randomRevealCount: Int {
+        get { revealCount }
+        set { revealCount = newValue }
+    }
+    var randomRevealStartBeatBucket: Int? {
+        get { revealStartBeatBucket }
+        set { revealStartBeatBucket = newValue }
+    }
+    var sequentialRevealCount: Int {
+        get { revealCount }
+        set { revealCount = newValue }
+    }
+    var sequentialRevealStartBeatBucket: Int? {
+        get { revealStartBeatBucket }
+        set { revealStartBeatBucket = newValue }
+    }
+
     // MARK: Phase Announcements & Completion
     var phaseAnnouncementStartBeat: Double? = nil
+    var phaseAnnouncementPhase: Int = 0   // 0=none,1=number,2=attributes,3=completed
     var phaseCompletedMessagePending: Bool = false
     var phaseCompletedMessageStartBeat: Double? = nil
     var completedPhaseNumber: Int = 0
     var pendingPhaseCompletedAutoAdvanceDate: Date? = nil
     var phaseTransitionPending: Bool = false
+    var nextPhaseNumber: Int = 1
 
     // MARK: Round Shift
     var pendingRoundShiftBeatPosition: Double? = nil
