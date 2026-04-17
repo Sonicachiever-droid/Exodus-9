@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 // MARK: - Unified Note Sequence Generator Protocol
 
@@ -16,7 +17,7 @@ protocol NoteSequenceGenerator: AnyObject {
 
 // MARK: - Random Note Generator
 
-final class RandomNoteGenerator: NoteSequenceGenerator {
+final class RandomNoteGenerator: ObservableObject, NoteSequenceGenerator {
     private(set) var currentNoteSequence: [String] = []
     private(set) var noteStringMap: [Int] = []
     private(set) var sequenceProgressIndex: Int = 0
@@ -76,7 +77,7 @@ final class RandomNoteGenerator: NoteSequenceGenerator {
 
 // MARK: - Sequential Note Generator
 
-final class SequentialNoteGenerator: NoteSequenceGenerator {
+final class SequentialNoteGenerator: ObservableObject, NoteSequenceGenerator {
     private(set) var currentNoteSequence: [String] = []
     private(set) var noteStringMap: [Int] = []
     private(set) var sequenceProgressIndex: Int = 0
