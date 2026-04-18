@@ -921,6 +921,7 @@ struct MaestroGameplayView: View {
     @Binding var playDirectionRawValue: String
     @Binding var playEnableHighFrets: Bool
     @Binding var playLessonStyle: String
+    @Binding var playProgression: String
     @Binding var walletDollars: Int
     @Binding var balanceDollars: Int
 
@@ -930,7 +931,7 @@ struct MaestroGameplayView: View {
     private var minFretOffset: Int { -totalFrets }
 
     private var isPhaseDescending: Bool {
-        [2, 4, 6, 8, 10, 12].contains(selectedPhase)
+        LessonDirection(rawValue: playDirectionRawValue) == .descending
     }
 
     private var usesRandomStringOrder: Bool {
@@ -941,13 +942,13 @@ struct MaestroGameplayView: View {
         "PHASE \(selectedPhase)"
     }
 
+    private var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
+
+    private var maestroUsesFlats: Bool { isPhaseDescending }
+
     private var activeStringOrder: [Int] {
-        switch selectedMode {
-        case .oneHand:
-            return [1, 2, 3, 4]
-        default:
-            return [1, 2, 3, 4, 5, 6]
-        }
+        let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
+        return isProgressionLowToHigh ? base.reversed() : base
     }
 
     private var modePayoutMultiplier: Double {
@@ -1057,6 +1058,7 @@ struct MaestroGameplayView: View {
         playDirectionRawValue: Binding<String> = .constant(""),
         playEnableHighFrets: Binding<Bool> = .constant(false),
         playLessonStyle: Binding<String> = .constant(""),
+        playProgression: Binding<String> = .constant("highToLow"),
         walletDollars: Binding<Int> = .constant(0),
         balanceDollars: Binding<Int> = .constant(0)
     ) {
@@ -1071,6 +1073,7 @@ struct MaestroGameplayView: View {
         self._playDirectionRawValue = playDirectionRawValue
         self._playEnableHighFrets = playEnableHighFrets
         self._playLessonStyle = playLessonStyle
+        self._playProgression = playProgression
         self._walletDollars = walletDollars
         self._balanceDollars = balanceDollars
     }
@@ -1328,7 +1331,7 @@ struct MaestroGameplayView: View {
                         }
 
                         ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, stringNumber in
-                            let note: String = noteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: false)
+                            let note: String = noteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: maestroUsesFlats)
                             let isAccidental: Bool = note.contains("#") || note.contains("b")
                             let fillColor: Color = isAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                             let strokeColor: Color = isAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
@@ -1763,7 +1766,7 @@ struct MaestroGameplayView: View {
     }
 
     private func startGameFromBeginning() {
-        currentRound = isPhaseDescending ? 12 : 0
+        currentRound = playStartingFret
         roundStringIndex = 0
         isDescendingPhase = isPhaseDescending
         bankDollars = 0
@@ -1814,7 +1817,7 @@ struct MaestroGameplayView: View {
                 startupSequenceActivated = false
                 startupSequenceElapsed = 0
                 startupSpeechPhase = .idle
-                currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
+                currentFretStart = playStartingFret
                 startGameFromBeginning()
                 syncMaestroBackingTrack()
                 isLaunchTransitionAnimating = false
@@ -1888,7 +1891,7 @@ struct MaestroGameplayView: View {
                 startupSequenceActivated = false
                 startupSequenceElapsed = 0
                 startupSpeechPhase = .idle
-                currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
+                currentFretStart = playStartingFret
                 startGameFromBeginning()
                 isLaunchTransitionAnimating = false
                 launchTileScale = 1
@@ -2048,7 +2051,7 @@ struct MaestroGameplayView: View {
 
         let noteString = currentPromptStrings.first ?? targetString
         let fret = max(currentRound, 0)
-        let useFlats = false
+        let useFlats = maestroUsesFlats
         let correctNote = noteName(forString: noteString, fret: fret, useFlats: useFlats)
         let incorrectNote = randomIncorrectNote(excluding: correctNote, useFlats: useFlats)
 

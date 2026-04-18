@@ -20,6 +20,7 @@ struct Exodus_9App: App {
     @AppStorage("numbers3.setup.enableHighFrets") private var enableHighFrets: Bool = false
     @AppStorage("numbers3.setup.lessonStyle") private var lessonStyleRawValue: String = "chord"
     @AppStorage("numbers3.setup.selectedMode") private var selectedModeRawValue: String = "beginner"
+    @AppStorage("numbers3.setup.progression") private var progressionRawValue: String = "highToLow"
 
     init() {
         if LessonDirection(rawValue: directionRawValue) == nil {
@@ -60,6 +61,7 @@ struct Exodus_9App: App {
                             playDirectionRawValue: $directionRawValue,
                             playEnableHighFrets: $enableHighFrets,
                             playLessonStyle: $lessonStyleRawValue,
+                            playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
                             balanceDollars: $balancePoints
                         )
@@ -73,6 +75,7 @@ struct Exodus_9App: App {
                             playDirectionRawValue: $directionRawValue,
                             playEnableHighFrets: $enableHighFrets,
                             playLessonStyle: $lessonStyleRawValue,
+                            playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
                             balanceDollars: $balancePoints
                         )
@@ -135,6 +138,7 @@ struct Exodus_9App: App {
                     directionRawValue: $directionRawValue,
                     enableHighFrets: $enableHighFrets,
                     lessonStyleRawValue: $lessonStyleRawValue,
+                    progressionRawValue: $progressionRawValue,
                     layoutMode: $layoutMode
                 )
             }
@@ -152,6 +156,7 @@ private struct Exodus9MenuSheet: View {
     @Binding var directionRawValue: String
     @Binding var enableHighFrets: Bool
     @Binding var lessonStyleRawValue: String
+    @Binding var progressionRawValue: String
     @Binding var layoutMode: LayoutMode?
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
     @Environment(\.dismiss) private var dismiss
@@ -167,10 +172,13 @@ private struct Exodus9MenuSheet: View {
                     }
                 case .learn:
                     Section("Lesson Setup") {
-                        Picker("Style", selection: $lessonStyleRawValue) {
-                            Text("Random").tag("random")
-                            Text("Sequential").tag("sequential")
-                            Text("Chord").tag("chord")
+                        if layoutMode == .beginner {
+                            Picker("Style", selection: $lessonStyleRawValue) {
+                                Text("Random").tag("random")
+                                Text("Sequential").tag("sequential")
+                                Text("Chord").tag("chord")
+                            }
+                            .pickerStyle(.segmented)
                         }
 
                         Stepper("Repetitions: \(repetitions)", value: $repetitions, in: 1...8)
@@ -181,7 +189,17 @@ private struct Exodus9MenuSheet: View {
                             Text("Ascending").tag(LessonDirection.ascending.rawValue)
                             Text("Descending").tag(LessonDirection.descending.rawValue)
                         }
-                        .disabled(directionLockActive)
+                        .pickerStyle(.segmented)
+                        .disabled(layoutMode == .beginner && directionLockActive)
+
+                        let progressionLocked = layoutMode == .beginner && (lessonStyleRawValue == "chord" || lessonStyleRawValue == "random")
+                        Picker("Progression", selection: $progressionRawValue) {
+                            Text("High \u{2192} Low").tag("highToLow")
+                            Text("Low \u{2192} High").tag("lowToHigh")
+                        }
+                        .pickerStyle(.segmented)
+                        .disabled(progressionLocked)
+                        .colorMultiply(progressionLocked ? .red : .white)
 
                         Toggle("Enable High Frets (12+)", isOn: $enableHighFrets)
                     }

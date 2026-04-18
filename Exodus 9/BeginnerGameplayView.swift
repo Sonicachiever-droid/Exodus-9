@@ -716,6 +716,7 @@ private struct DeveloperConsoleFrame: View {
     let currentRoundInPhase: Int
     let repetitionCountColor: Color
     let walletColor: Color
+    let hideRoundLabel: Bool
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
@@ -846,10 +847,12 @@ private struct DeveloperConsoleFrame: View {
                                                         .font(.system(size: 20, weight: .black, design: .monospaced))
                                                         .foregroundStyle(repetitionCountColor)
                                                     Spacer()
-                                                    Text("Round \(currentRoundInPhase)")
-                                                        .font(.system(size: min(width * 0.095, 26), weight: .black, design: .monospaced))
-                                                        .foregroundStyle(Color.white)
-                                                    Spacer()
+                                                    if !hideRoundLabel {
+                                                        Text("Round \(currentRoundInPhase)")
+                                                            .font(.system(size: min(width * 0.095, 26), weight: .black, design: .monospaced))
+                                                            .foregroundStyle(Color.white)
+                                                        Spacer()
+                                                    }
                                                     VStack(alignment: .trailing, spacing: 2) {
                                                         Text("WALLET")
                                                             .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -889,24 +892,33 @@ private struct DeveloperConsoleFrame: View {
                                                 .allowsHitTesting(false)
                                         } else if let beginnerRoundStatusText {
                                             let statusLines = beginnerRoundStatusText.components(separatedBy: "\n")
-                                            let titleLine: String = statusLines.count == 1 ? "" : (statusLines.indices.contains(1) ? statusLines[1] : "")
-                                            let notesLine: String = statusLines.count == 1 ? statusLines[0] : (statusLines.indices.contains(2) ? statusLines[2] : "")
-                                            let startupMappedBlock = [titleLine, notesLine]
-                                                .filter { !$0.isEmpty }
-                                                .joined(separator: "\n")
+                                            let titleLine: String = statusLines.count >= 2 ? statusLines[0] : ""
+                                            let notesLine: String = statusLines.count >= 2 ? statusLines[1] : statusLines[0]
 
-                                            if !startupMappedBlock.isEmpty {
-                                                Text(startupMappedBlock)
-                                                    .font(.system(size: min(width * 0.19, 52), weight: .black, design: .monospaced))
-                                                    .foregroundStyle(Color.green.opacity(0.98))
-                                                    .minimumScaleFactor(0.3)
-                                                    .lineLimit(2)
-                                                    .multilineTextAlignment(.center)
-                                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                                    .padding(.horizontal, 10)
-                                                    .padding(.top, 24)
-                                                    .padding(.bottom, 8)
-                                                    .allowsHitTesting(false)
+                                            if !titleLine.isEmpty || !notesLine.isEmpty {
+                                                VStack(spacing: 2) {
+                                                    if !titleLine.isEmpty {
+                                                        Text(titleLine)
+                                                            .font(.system(size: min(width * 0.14, 38), weight: .black, design: .monospaced))
+                                                            .foregroundStyle(Color.green.opacity(0.98))
+                                                            .minimumScaleFactor(0.5)
+                                                            .lineLimit(1)
+                                                            .multilineTextAlignment(.center)
+                                                    }
+                                                    if !notesLine.isEmpty {
+                                                        Text(notesLine)
+                                                            .font(.system(size: min(width * 0.19, 52), weight: .black, design: .monospaced))
+                                                            .foregroundStyle(Color.green.opacity(0.98))
+                                                            .minimumScaleFactor(0.3)
+                                                            .lineLimit(1)
+                                                            .multilineTextAlignment(.center)
+                                                    }
+                                                }
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                                                .padding(.horizontal, 10)
+                                                .padding(.top, 24)
+                                                .padding(.bottom, 8)
+                                                .allowsHitTesting(false)
                                             } else {
                                                 EmptyView()
                                             }
@@ -1036,6 +1048,7 @@ struct BeginnerGameplayView: View {
     @Binding var playEnableHighFrets: Bool
     @Binding var playLessonStyle: String
     private var lessonStyle: LessonStyle { LessonStyle(rawValue: playLessonStyle) ?? .chord }
+    @Binding var playProgression: String
     @Binding var walletDollars: Int
     @Binding var balanceDollars: Int
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
@@ -1113,14 +1126,12 @@ struct BeginnerGameplayView: View {
         layoutMode == .maestro
     }
 
+    private var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
+
     private var activeStringOrder: [Int] {
         let baseOrder: [Int] = {
-            switch selectedMode {
-            case .oneHand:
-                return [1, 2, 3, 4]
-            default:
-                return [1, 2, 3, 4, 5, 6]
-            }
+            let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
+            return (modeVariant == .freestyle && isProgressionLowToHigh) ? base.reversed() : base
         }()
 
         switch modeVariant {
@@ -1756,6 +1767,7 @@ struct BeginnerGameplayView: View {
         playDirectionRawValue: Binding<String> = .constant(LessonDirection.ascending.rawValue),
         playEnableHighFrets: Binding<Bool> = .constant(false),
         playLessonStyle: Binding<String> = .constant("chord"),
+        playProgression: Binding<String> = .constant("highToLow"),
         walletDollars: Binding<Int> = .constant(0),
         balanceDollars: Binding<Int> = .constant(0)
     ) {
@@ -1770,6 +1782,7 @@ struct BeginnerGameplayView: View {
         self._playDirectionRawValue = playDirectionRawValue
         self._playEnableHighFrets = playEnableHighFrets
         self._playLessonStyle = playLessonStyle
+        self._playProgression = playProgression
         self._walletDollars = walletDollars
         self._balanceDollars = balanceDollars
     }
@@ -2116,7 +2129,8 @@ struct BeginnerGameplayView: View {
                     currentRound: currentRound,
                     currentRoundInPhase: beginnerRuntime.currentRoundInPhase,
                     repetitionCountColor: getRepetitionCountColor(),
-                    walletColor: getWalletColor()
+                    walletColor: getWalletColor(),
+                    hideRoundLabel: layoutMode == .beginner && lessonStyle == .chord && beginnerRoundStatusText != nil
                 )
                 .position(x: proxy.size.width / 2, y: topStatusCenterY)
                 .allowsHitTesting(false)
