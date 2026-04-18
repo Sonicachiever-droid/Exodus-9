@@ -816,6 +816,7 @@ private struct DeveloperConsoleFrame: View {
                         } else if let msg = centeredStatusMessage {
                             Text(msg)
                                 .font(.system(size: min(width * 0.086, 26), weight: .black, design: .monospaced))
+                                .fontWidth(.compressed)
                                 .foregroundStyle(centeredStatusColor)
                                 .minimumScaleFactor(0.7)
                                 .multilineTextAlignment(.center)
