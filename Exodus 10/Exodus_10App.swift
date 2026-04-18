@@ -118,6 +118,7 @@ struct Exodus_10App: App {
                 } else if newMode == .maestro {
                     selectedModeRawValue = "maestro"
                 }
+                GuitarNoteEngine.shared.stopAll()
             }
             .sheet(item: $selectedMenuOption) { option in
                 Exodus10MenuSheet(
@@ -150,6 +151,7 @@ private struct Exodus10MenuSheet: View {
     @Binding var layoutMode: LayoutMode?
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
     @Environment(\.dismiss) private var dismiss
+    @State private var isButtonPressed: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -164,8 +166,8 @@ private struct Exodus10MenuSheet: View {
                     Section("Lesson Setup") {
                         if layoutMode == .beginner {
                             Picker("Style", selection: $lessonStyleRawValue) {
-                                Text("Random").tag("random")
                                 Text("Sequential").tag("sequential")
+                                Text("Random").tag("random")
                                 Text("Chord").tag("chord")
                             }
                             .pickerStyle(.segmented)
@@ -175,12 +177,14 @@ private struct Exodus10MenuSheet: View {
 
                         Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(enableHighFrets ? 19 : 12))
 
+                        let descendingImpossible = startingFret == 0
                         Picker("Direction", selection: $directionRawValue) {
                             Text("Ascending").tag(LessonDirection.ascending.rawValue)
                             Text("Descending").tag(LessonDirection.descending.rawValue)
                         }
                         .pickerStyle(.segmented)
-                        .disabled(layoutMode == .beginner && directionLockActive)
+                        .disabled((layoutMode == .beginner && directionLockActive) || descendingImpossible)
+                        .colorMultiply(descendingImpossible ? .red : .white)
 
                         let progressionLocked = layoutMode == .beginner && (lessonStyleRawValue == "chord" || lessonStyleRawValue == "random")
                         Picker("Progression", selection: $progressionRawValue) {
@@ -201,12 +205,17 @@ private struct Exodus10MenuSheet: View {
 
                     Section {
                         Button {
-                            if layoutMode == .beginner {
-                                layoutMode = .maestro
-                            } else {
-                                layoutMode = .beginner
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                                isButtonPressed = true
                             }
-                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                if layoutMode == .beginner {
+                                    layoutMode = .maestro
+                                } else {
+                                    layoutMode = .beginner
+                                }
+                                dismiss()
+                            }
                         } label: {
                             HStack {
                                 Spacer()
@@ -216,14 +225,20 @@ private struct Exodus10MenuSheet: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
+                        .scaleEffect(isButtonPressed ? 1.08 : 1.0)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.4), value: isButtonPressed)
                     }
-                case .phases:
+                case .guide:
                     Section("Controls") {
-                        Text("HINT: Shows the correct note for the current question.")
                         Text("FRETBOARD: Toggles a visual guide showing all notes at current fret position.")
-                        Text("MENU: Opens additional options (HOME, PLAY, GUIDE, AUDIO).")
                         Text("AUTO: Toggles autoplay mode (automatically plays correct notes).")
-                        Text("LEFT/RIGHT buttons: Submit your answer for the left or right thumb position.")
+                    }
+                    Section("Modes") {
+                        Text("Choose Beginner Modes to familiarize yourself with fretboard.")
+                        Text("Choose Maestro mode to test your knowledge.")
+                        Text("Sequential teaches Fret Notes by repetition. Choose progression from high to low or low to high.")
+                        Text("Random reinforces Fret Knowledge.")
+                        Text("Chord teaches chords formed from Fret notes.")
                     }
                 case .audio:
                     Section("Audio") {

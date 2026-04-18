@@ -121,7 +121,7 @@ private struct GameplayControlPlateShell: View {
     let onToggleMenu: () -> Void
     let onSelectMenuOption: (GameplayMenuOption) -> Void
 
-    private let menuOptions: [GameplayMenuOption] = [.home, .learn, .phases, .audio]
+    private let menuOptions: [GameplayMenuOption] = [.home, .audio, .guide, .learn]
 
     var body: some View {
         VStack(spacing: 10) {
@@ -976,6 +976,8 @@ struct MaestroGameplayView: View {
     @State private var assetToNutBottomDelta: CGFloat? = nil
     @State private var questionBoxAssistActive: Bool = false
     @State private var gameplayMenuExpanded: Bool = false
+    @State private var maestroStartButtonBlinkOn: Bool = false
+    @State private var maestroStartButtonNextBlinkDate: Date? = nil
     @State private var developerPromptText: String = ""
     @State private var currentCorrectNote: String = ""
     @State private var lastResolvedCorrectNote: String? = nil
@@ -1185,7 +1187,7 @@ struct MaestroGameplayView: View {
             }()
             let effectiveLeftThumbState = isCodeScreensaverMode ? screensaverThumbState : leftThumbState
             let effectiveRightThumbState = isCodeScreensaverMode ? screensaverThumbState : rightThumbState
-            let startButtonBlinkOn = isCodeScreensaverMode && startupState.isVisible
+            let startButtonBlinkOn = isCodeScreensaverMode && (startupSequenceActivated ? startupState.isVisible : maestroStartButtonBlinkOn)
             let initialGameplayDimOpacity: CGFloat = (isCodeScreensaverMode && !startupSequenceActivated) ? 0.42 : 1.0
             let sideWindowGap = max((proxy.size.width - highlightWidth) / 4, 18)
             let leftFretIndicatorX = (proxy.size.width / 2) - (highlightWidth / 2) - sideWindowGap
@@ -1462,12 +1464,19 @@ struct MaestroGameplayView: View {
                                         .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                                 )
                         )
-                    Button("STOP") { handleMaestroStopButton() }
+                    Button(isRoundPaused ? "RESUME" : "PAUSE") {
+                        if isRoundPaused { handleMaestroStartButton() }
+                        else { handleMaestroStopButton() }
+                    }
                         .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .disabled(isCodeScreensaverMode || isRoundPaused)
+                        .disabled(isCodeScreensaverMode && !isRoundPaused)
                         .background(
                             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                                .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                                )
                         )
                     Button("RESET") { handleMaestroResetButton() }
                         .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
@@ -1574,7 +1583,15 @@ struct MaestroGameplayView: View {
             .onDisappear {
                 midiEngine.stop()
             }
-            .sheet(isPresented: $showAudioPage) {
+            .sheet(isPresented: $showAudioPage, onDismiss: {
+                if transportStoppedForResume {
+                    isRoundPaused = false
+                    transportStoppedForResume = false
+                    nextBeatTickDate = nil
+                    beatLightLastProcessedBeat = nil
+                    syncMaestroBackingTrack(allowResumeFromPause: true)
+                }
+            }) {
                 AudioPageView(
                     audioSettings: audioSettings,
                     availableBackingTracks: availableBackingTracks,
@@ -1620,6 +1637,19 @@ struct MaestroGameplayView: View {
                     startupSequenceElapsed = max(date.timeIntervalSince(startupSequenceStartDate), 0)
                     let startupState = MaestroStartupSequenceView.state(for: startupSequenceElapsed)
                     handleStartupSpeech(for: startupState.phase)
+                    maestroStartButtonBlinkOn = false
+                    maestroStartButtonNextBlinkDate = nil
+                } else if isCodeScreensaverMode {
+                    if maestroStartButtonNextBlinkDate == nil {
+                        maestroStartButtonBlinkOn = true
+                        maestroStartButtonNextBlinkDate = date.addingTimeInterval(0.45)
+                    } else if let nextBlink = maestroStartButtonNextBlinkDate, date >= nextBlink {
+                        maestroStartButtonBlinkOn.toggle()
+                        maestroStartButtonNextBlinkDate = date.addingTimeInterval(0.45)
+                    }
+                } else {
+                    maestroStartButtonBlinkOn = false
+                    maestroStartButtonNextBlinkDate = nil
                 }
 
                 if !isCodeScreensaverMode {
@@ -1882,6 +1912,10 @@ struct MaestroGameplayView: View {
             syncMaestroBackingTrack(allowResumeFromPause: true)
             return
         }
+
+        if !isCodeScreensaverMode {
+            handleMaestroResetButton()
+        }
     }
 
     private func handleMaestroStopButton() {
@@ -2138,6 +2172,9 @@ struct MaestroGameplayView: View {
 
     private func handleGameplayMenuSelection(_ option: GameplayMenuOption) {
         gameplayMenuExpanded = false
+        if !isCodeScreensaverMode && !isRoundPaused {
+            handleMaestroStopButton()
+        }
         if option == .audio {
             availableBackingTracks = BackingTrack.discoverBundledTracks()
             audioSettings.selectInitialBackingTrackIfNeeded(from: availableBackingTracks)

@@ -29,7 +29,7 @@ enum GameConstants {
     static let phaseCompletionAutoAdvanceBeats: Double = 4.0
     static let minBPM: Int = 60
     static let minPhase: Int = 1
-    static let maxPhase: Int = 8
+    static let maxPhase: Int = 4
     static let stringCount: Int = 6
     // Left column: strings top→bottom = 4, 5, 6
     static let leftColumnStrings: [Int] = [4, 5, 6]
@@ -42,7 +42,7 @@ enum GameConstants {
 enum GameplayMenuOption: String, CaseIterable, Identifiable {
     case home
     case learn
-    case phases
+    case guide
     case audio
 
     var id: String { rawValue }
@@ -50,7 +50,7 @@ enum GameplayMenuOption: String, CaseIterable, Identifiable {
         switch self {
         case .home: return "HOME"
         case .learn: return "PLAY"
-        case .phases: return "GUIDE"
+        case .guide: return "GUIDE"
         case .audio: return "AUDIO"
         }
     }
