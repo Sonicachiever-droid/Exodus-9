@@ -958,8 +958,6 @@ struct MaestroGameplayView: View {
     @State private var isDescendingPhase: Bool = false
     @State private var leftChoiceNote: String = ""
     @State private var rightChoiceNote: String = ""
-    @State private var correctAnswerSide: AnswerSide = .left
-    @State private var isResolvingAnswer: Bool = false
     @State private var activePickedStringNumbers: [Int] = [1]
     @State private var activeAnswerFeedback: ThumbGlowState? = nil
     @State private var currentQuestionIsAccidental: Bool = false
@@ -974,7 +972,7 @@ struct MaestroGameplayView: View {
     @State private var startupSequenceElapsed: TimeInterval = 0
     @State private var startupSequenceActivated: Bool = false
     @State private var assetToNutBottomDelta: CGFloat? = nil
-    @State private var questionBoxAssistActive: Bool = false
+    @State private var isAutoPlayTriggered: Bool = false
     @State private var gameplayMenuExpanded: Bool = false
     @State private var maestroStartButtonBlinkOn: Bool = false
     @State private var maestroStartButtonNextBlinkDate: Date? = nil
@@ -1372,7 +1370,6 @@ struct MaestroGameplayView: View {
                             width: screenBannerWidth,
                             height: screenBannerHeight,
                             fontScale: 0.82,
-                            glowTint: questionBoxAssistActive ? .orange : nil,
                             hitTestingEnabled: false
                         )
                         MiniTVFrame(
@@ -1380,7 +1377,6 @@ struct MaestroGameplayView: View {
                             width: screenBannerWidth,
                             height: screenBannerHeight,
                             fontScale: 0.82,
-                            glowTint: questionBoxAssistActive ? .orange : nil,
                             hitTestingEnabled: false
                         )
                     }
@@ -1546,7 +1542,6 @@ struct MaestroGameplayView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(isResolvingAnswer)
 
                     Button(action: { submitAnswer(.right) }) {
                         ThumbButtonView(
@@ -1556,7 +1551,6 @@ struct MaestroGameplayView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(isResolvingAnswer)
                 }
                 .frame(maxWidth: .infinity)
                 .position(x: proxy.size.width / 2, y: buttonCenterY)
@@ -1697,7 +1691,7 @@ struct MaestroGameplayView: View {
                     }
                 }
 
-                let shouldPulseQuestionBox = !isCodeScreensaverMode && !isResolvingAnswer
+                let shouldPulseQuestionBox = !isCodeScreensaverMode
                 if shouldPulseQuestionBox {
                     if nextQuestionBoxPulseDate == nil {
                         nextQuestionBoxPulseDate = date.addingTimeInterval(1.0)
@@ -1746,7 +1740,6 @@ struct MaestroGameplayView: View {
         guard autoPlayEnabled,
               !isCodeScreensaverMode,
               !startupSequenceActivated,
-              !isResolvingAnswer,
               !isRoundPaused
         else {
             if !autoPlayEnabled {
@@ -1758,7 +1751,10 @@ struct MaestroGameplayView: View {
         guard let nextDate = autoPlayNextDate, currentDate >= nextDate else { return }
 
         // Submit the correct answer
-        submitAnswer(correctAnswerSide, force: true)
+        let correctSide: AnswerSide = leftChoiceNote == currentCorrectNote ? .left : .right
+        isAutoPlayTriggered = true
+        submitAnswer(correctSide, force: true)
+        isAutoPlayTriggered = false
         autoPlayNextDate = currentDate.addingTimeInterval(0.38)
     }
 
@@ -1777,7 +1773,6 @@ struct MaestroGameplayView: View {
         leftThumbState = .neutral
         rightThumbState = .neutral
         activeAnswerFeedback = nil
-        isResolvingAnswer = false
         gameplayMenuExpanded = false
         developerPromptText = ""
         currentCorrectNote = ""
@@ -1829,10 +1824,7 @@ struct MaestroGameplayView: View {
 
         }
 
-        guard force || !isResolvingAnswer else { return }
-        isResolvingAnswer = true
-
-        let isCorrect = side == correctAnswerSide
+        let isCorrect = side == .left && leftChoiceNote == currentCorrectNote || side == .right && rightChoiceNote == currentCorrectNote
         if isCorrect {
             withAnimation(.none) {
                 leftThumbState = .green
@@ -1858,7 +1850,6 @@ struct MaestroGameplayView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             leftThumbState = .neutral
             rightThumbState = .neutral
-            questionBoxAssistActive = false
             if isCorrect {
                 advanceGame(afterCorrectAnswer: true)
             } else {
@@ -1977,34 +1968,17 @@ struct MaestroGameplayView: View {
         midiEngine.play(url: trackURL, title: selectedTrack.title, loop: true)
     }
 
-    private func purchaseAnswerFromQuestionBox() {
-        guard !isCodeScreensaverMode, !isResolvingAnswer else { return }
-        let charge = max(1, payoutForRound(currentRound))
-        bankDollars = max(bankDollars - charge, 0)
-        displayedBankDollars = bankDollars
-        walletDollars = bankDollars
-
-        questionBoxAssistActive = true
-        if correctAnswerSide == .left {
-            leftThumbState = .orange
-            rightThumbState = .neutral
-        } else {
-            leftThumbState = .neutral
-            rightThumbState = .orange
-        }
-
-        isResolvingAnswer = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
-            submitAnswer(correctAnswerSide, force: true)
-        }
-    }
-
     private func advanceGame(afterCorrectAnswer isCorrect: Bool) {
         if !isCorrect {
             animateBankResetToZero {
                 startGameFromBeginning()
-                isResolvingAnswer = false
             }
+            return
+        }
+
+        // Skip point earning for autoplay
+        guard !isAutoPlayTriggered else {
+            prepareCurrentQuestion()
             return
         }
 
@@ -2047,7 +2021,6 @@ struct MaestroGameplayView: View {
             }
         }
         prepareCurrentQuestion()
-        isResolvingAnswer = false
     }
 
     private func prepareCurrentQuestion() {
@@ -2065,11 +2038,9 @@ struct MaestroGameplayView: View {
         if correctOnLeft {
             leftChoiceNote = correctNote
             rightChoiceNote = incorrectNote
-            correctAnswerSide = .left
         } else {
             leftChoiceNote = incorrectNote
             rightChoiceNote = correctNote
-            correctAnswerSide = .right
         }
 
         currentCorrectNote = correctNote
@@ -2077,7 +2048,6 @@ struct MaestroGameplayView: View {
         activePickedStringNumbers = currentPromptStrings
         currentQuestionIsAccidental = correctNote.contains("#") || correctNote.contains("b")
         activeAnswerFeedback = nil
-        questionBoxAssistActive = false
 
         // Cache labels so they stay in sync with the question
         cachedFretStatusLabel = fret == 0 ? "OPEN" : "FRET \(fret)"
@@ -2096,9 +2066,7 @@ struct MaestroGameplayView: View {
     }
 
     private func payoutForRound(_ round: Int) -> Int {
-        let clamped = min(max(round, 0), 20)
-        let baseValue = Int(pow(2.0, Double(clamped)))
-        return max(1, Int((Double(baseValue) * modePayoutMultiplier).rounded()))
+        return 1
     }
 
     private func animateBankResetToZero(completion: @escaping () -> Void) {

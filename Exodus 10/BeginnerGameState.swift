@@ -58,6 +58,7 @@ final class BeginnerGameState {
     // MARK: Autoplay
     var autoPlayEnabled: Bool = false
     var autoPlayNextDate: Date? = nil
+    var isAutoPlayTriggered: Bool = false
 
     // MARK: Beat Light
     var beatLightFlashOn: Bool = false

@@ -816,7 +816,6 @@ private struct DeveloperConsoleFrame: View {
                         } else if let msg = centeredStatusMessage {
                             Text(msg)
                                 .font(.system(size: min(width * 0.086, 26), weight: .black, design: .monospaced))
-                                .fontWidth(.compressed)
                                 .foregroundStyle(centeredStatusColor)
                                 .minimumScaleFactor(0.7)
                                 .multilineTextAlignment(.center)
@@ -834,12 +833,6 @@ private struct DeveloperConsoleFrame: View {
                                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                                 } else {
                                     ZStack {
-                                        // Grid overlay for positioning reference (beginner mode only)
-                                        if layoutMode == .beginner {
-                                            GridOverlay()
-                                                .allowsHitTesting(false)
-                                        }
-                                        
                                         VStack(spacing: 0) {
                                             // Only show 3x/Round/Wallet line when phase announcement or completed message is not active
                                             if phaseAnnouncementText == nil && phaseCompletedMessageText == nil {
@@ -3562,6 +3555,12 @@ struct BeginnerGameplayView: View {
             return
         }
 
+        // Skip point earning for autoplay
+        guard !beginnerRuntime.isAutoPlayTriggered else {
+            prepareCurrentQuestion()
+            return
+        }
+
         beginnerRuntime.correctAnswersAtCurrentFret = min(beginnerRuntime.correctAnswersAtCurrentFret + 1, 20)
         let payout = payoutForRound(currentRound)
         bankDollars += payout
@@ -3709,7 +3708,7 @@ struct BeginnerGameplayView: View {
 
     private func payoutForRound(_ round: Int) -> Int {
         _ = round
-        return 5
+        return 1
     }
 
     private func animateBankResetToZero(completion: @escaping () -> Void) {

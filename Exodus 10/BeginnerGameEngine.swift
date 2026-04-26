@@ -217,7 +217,9 @@ final class BeginnerGameEngine {
 
         // Correct button index: left col strings 4-6 → idx 0-2; right col strings 1-3 → idx 3-5
         let buttonIndex = nextString >= 4 ? (nextString - 4) : (6 - nextString)
+        state.isAutoPlayTriggered = true
         handleButtonPress(note: nextNote, string: nextString, buttonIndex: buttonIndex)
+        state.isAutoPlayTriggered = false
         state.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
     }
 

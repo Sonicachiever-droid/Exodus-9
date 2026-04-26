@@ -37,38 +37,9 @@ final class RandomNoteGenerator: ObservableObject, NoteSequenceGenerator {
                 pairs.append((chromatic[(i + fret) % 12], entry.string))
             }
         }
-        
-        // Group pairs by note value to ensure duplicate notes use different string locations
-        var grouped: [String: [(note: String, string: Int)]] = [:]
-        for pair in pairs {
-            grouped[pair.note, default: []].append(pair)
-        }
-        
-        // Shuffle within each group to randomize string selection for duplicate notes
-        for note in grouped.keys {
-            grouped[note]?.shuffle()
-        }
-        
-        // Flatten back to sequence while preserving order of first occurrence
-        var shuffled: [(note: String, string: Int)] = []
-        var noteOrder: [String] = []
-        
-        // Get unique notes in their original order
-        for pair in pairs {
-            if !noteOrder.contains(pair.note) {
-                noteOrder.append(pair.note)
-            }
-        }
-        
-        // For each note in order, add all its string locations (already shuffled within group)
-        for note in noteOrder {
-            if let notePairs = grouped[note] {
-                shuffled.append(contentsOf: notePairs)
-            }
-        }
-        
-        currentNoteSequence = shuffled.map { $0.note }
-        noteStringMap = shuffled.map { $0.string }
+        pairs.shuffle()
+        currentNoteSequence = pairs.map { $0.note }
+        noteStringMap = pairs.map { $0.string }
         usedStringLocations.removeAll()
         sequenceProgressIndex = 0
     }
@@ -126,39 +97,10 @@ final class SequentialNoteGenerator: ObservableObject, NoteSequenceGenerator {
                 pairs.append((chromatic[(i + fret) % 12], entry.string))
             }
         }
-        
-        // Group pairs by note value to ensure duplicate notes use different string locations
-        var grouped: [String: [(note: String, string: Int)]] = [:]
-        for pair in pairs {
-            grouped[pair.note, default: []].append(pair)
-        }
-        
-        // Shuffle within each group to randomize string selection for duplicate notes
-        for note in grouped.keys {
-            grouped[note]?.shuffle()
-        }
-        
-        // Flatten back to sequence while preserving order of first occurrence
-        var shuffled: [(note: String, string: Int)] = []
-        var noteOrder: [String] = []
-        
-        // Get unique notes in their original order
-        for pair in pairs {
-            if !noteOrder.contains(pair.note) {
-                noteOrder.append(pair.note)
-            }
-        }
-        
-        // For each note in order, add all its string locations (already shuffled within group)
-        for note in noteOrder {
-            if let notePairs = grouped[note] {
-                shuffled.append(contentsOf: notePairs)
-            }
-        }
-        
+        pairs.shuffle()
         // lowToHigh = strings 6→5→4→3→2→1 (ascending pitch)
         // highToLow = strings 1→2→3→4→5→6 (descending pitch)
-        let ordered = lowToHigh ? shuffled : shuffled.reversed()
+        let ordered = lowToHigh ? pairs : pairs.reversed()
         currentNoteSequence = ordered.map { $0.note }
         noteStringMap = ordered.map { $0.string }
         usedStringLocations.removeAll()
