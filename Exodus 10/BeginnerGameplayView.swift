@@ -1400,10 +1400,6 @@ struct BeginnerGameplayView: View {
         return notes.prefix(count).joined(separator: " ")
     }
 
-    private var beginnerCurrentRoundLabel: String {
-        "BEGINNER ROUND \(beginnerRuntime.currentRoundInPhase)"
-    }
-
     private var shouldShowLegacyRoundZeroIntro: Bool {
         beginnerRoundOneStartingFret == 0
     }

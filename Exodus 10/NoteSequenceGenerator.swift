@@ -97,7 +97,6 @@ final class SequentialNoteGenerator: ObservableObject, NoteSequenceGenerator {
                 pairs.append((chromatic[(i + fret) % 12], entry.string))
             }
         }
-        pairs.shuffle()
         // lowToHigh = strings 6→5→4→3→2→1 (ascending pitch)
         // highToLow = strings 1→2→3→4→5→6 (descending pitch)
         let ordered = lowToHigh ? pairs : pairs.reversed()
