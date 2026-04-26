@@ -887,6 +887,7 @@ struct MaestroGameplayView: View {
     let stringVolume: Double
     @Binding var playStartingFret: Int
     @Binding var playRepetitions: Int
+    @Binding var playInfiniteRepetitions: Bool
     @Binding var playDirectionRawValue: String
     @Binding var playEnableHighFrets: Bool
     @Binding var playLessonStyle: String
@@ -1024,6 +1025,7 @@ struct MaestroGameplayView: View {
         stringVolume: Double = 0.8,
         playStartingFret: Binding<Int> = .constant(0),
         playRepetitions: Binding<Int> = .constant(0),
+        playInfiniteRepetitions: Binding<Bool> = .constant(false),
         playDirectionRawValue: Binding<String> = .constant(""),
         playEnableHighFrets: Binding<Bool> = .constant(false),
         playLessonStyle: Binding<String> = .constant(""),
@@ -1039,6 +1041,7 @@ struct MaestroGameplayView: View {
         self.stringVolume = stringVolume
         self._playStartingFret = playStartingFret
         self._playRepetitions = playRepetitions
+        self._playInfiniteRepetitions = playInfiniteRepetitions
         self._playDirectionRawValue = playDirectionRawValue
         self._playEnableHighFrets = playEnableHighFrets
         self._playLessonStyle = playLessonStyle
@@ -1761,7 +1764,7 @@ struct MaestroGameplayView: View {
     private func startGameFromBeginning() {
         currentRound = playStartingFret
         roundStringIndex = 0
-        repetitionsRemainingAtFret = max(playRepetitions, 1)
+        repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
         isDescendingPhase = isPhaseDescending
         bankDollars = 0
         displayedBankDollars = 0
@@ -1996,9 +1999,12 @@ struct MaestroGameplayView: View {
         } else {
             // Pass through all strings complete — decrement repetition counter
             roundStringIndex = 0
-            repetitionsRemainingAtFret -= 1
-            if repetitionsRemainingAtFret <= 0 {
-                repetitionsRemainingAtFret = max(playRepetitions, 1)
+            if playInfiniteRepetitions {
+                // Infinite mode: never decrement, stay at current fret
+            } else {
+                repetitionsRemainingAtFret -= 1
+                if repetitionsRemainingAtFret <= 0 {
+                    repetitionsRemainingAtFret = max(playRepetitions, 1)
                 if !isPhaseDescending {
                     if currentRound < 12 {
                         currentRound += 1
@@ -2017,6 +2023,7 @@ struct MaestroGameplayView: View {
                 // Immediate neck shift with animation
                 withAnimation(.easeInOut(duration: 0.9)) {
                     currentFretStart = max(currentRound, 0)
+                }
                 }
             }
         }

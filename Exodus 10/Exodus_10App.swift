@@ -20,6 +20,7 @@ struct Exodus_10App: App {
     @AppStorage("numbers3.progress.balancePoints") private var balancePoints: Int = 0
     @AppStorage("numbers3.setup.startingFret") private var startingFret: Int = 0
     @AppStorage("numbers3.setup.repetitions") private var repetitions: Int = 5
+    @AppStorage("numbers3.setup.infiniteRepetitions") private var infiniteRepetitions: Bool = false
     @AppStorage("numbers3.setup.direction") private var directionRawValue: String = LessonDirection.ascending.rawValue
     @AppStorage("numbers3.setup.enableHighFrets") private var enableHighFrets: Bool = false
     @AppStorage("numbers3.setup.lessonStyle") private var lessonStyleRawValue: String = "chord"
@@ -49,6 +50,7 @@ struct Exodus_10App: App {
                             },
                             playStartingFret: $startingFret,
                             playRepetitions: $repetitions,
+                            playInfiniteRepetitions: $infiniteRepetitions,
                             playDirectionRawValue: $directionRawValue,
                             playEnableHighFrets: $enableHighFrets,
                             playLessonStyle: $lessonStyleRawValue,
@@ -63,6 +65,7 @@ struct Exodus_10App: App {
                             },
                             playStartingFret: $startingFret,
                             playRepetitions: $repetitions,
+                            playInfiniteRepetitions: $infiniteRepetitions,
                             playDirectionRawValue: $directionRawValue,
                             playEnableHighFrets: $enableHighFrets,
                             playLessonStyle: $lessonStyleRawValue,
@@ -127,6 +130,7 @@ struct Exodus_10App: App {
                     balancePoints: $balancePoints,
                     startingFret: $startingFret,
                     repetitions: $repetitions,
+                    infiniteRepetitions: $infiniteRepetitions,
                     directionRawValue: $directionRawValue,
                     enableHighFrets: $enableHighFrets,
                     lessonStyleRawValue: $lessonStyleRawValue,
@@ -144,6 +148,7 @@ private struct Exodus10MenuSheet: View {
     @Binding var balancePoints: Int
     @Binding var startingFret: Int
     @Binding var repetitions: Int
+    @Binding var infiniteRepetitions: Bool
     @Binding var directionRawValue: String
     @Binding var enableHighFrets: Bool
     @Binding var lessonStyleRawValue: String
@@ -152,6 +157,10 @@ private struct Exodus10MenuSheet: View {
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var isButtonPressed: Bool = false
+
+    private var repetitionDisplay: String {
+        infiniteRepetitions ? "∞" : "\(repetitions)"
+    }
 
     var body: some View {
         NavigationStack {
@@ -173,7 +182,10 @@ private struct Exodus10MenuSheet: View {
                             .pickerStyle(.segmented)
                         }
 
-                        Stepper("Repetitions: \(repetitions)", value: $repetitions, in: 1...Int.max)
+                        Stepper("Repetitions: \(repetitionDisplay)", value: $repetitions, in: 1...8)
+                            .disabled(infiniteRepetitions)
+
+                        Toggle("Infinite Repetitions", isOn: $infiniteRepetitions)
 
                         Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(enableHighFrets ? 19 : 12))
 

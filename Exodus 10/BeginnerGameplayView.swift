@@ -1054,6 +1054,7 @@ struct BeginnerGameplayView: View {
     let stringVolume: Double
     @Binding var playStartingFret: Int
     @Binding var playRepetitions: Int
+    @Binding var playInfiniteRepetitions: Bool
     @Binding var playDirectionRawValue: String
     @Binding var playEnableHighFrets: Bool
     @Binding var playLessonStyle: String
@@ -1667,7 +1668,10 @@ struct BeginnerGameplayView: View {
     }
 
     private var effectivePlayRepetitions: Int {
-        max(playRepetitions, 1)
+        if playInfiniteRepetitions {
+            return Int.max // Use very large number for infinite mode
+        }
+        return max(playRepetitions, 1)
     }
 
     private var beginnerRoundTwoStartsDescending: Bool {
@@ -1772,6 +1776,7 @@ struct BeginnerGameplayView: View {
         stringVolume: Double = 0.8,
         playStartingFret: Binding<Int> = .constant(0),
         playRepetitions: Binding<Int> = .constant(5),
+        playInfiniteRepetitions: Binding<Bool> = .constant(false),
         playDirectionRawValue: Binding<String> = .constant(LessonDirection.ascending.rawValue),
         playEnableHighFrets: Binding<Bool> = .constant(false),
         playLessonStyle: Binding<String> = .constant("chord"),
@@ -1787,6 +1792,7 @@ struct BeginnerGameplayView: View {
         self.stringVolume = stringVolume
         self._playStartingFret = playStartingFret
         self._playRepetitions = playRepetitions
+        self._playInfiniteRepetitions = playInfiniteRepetitions
         self._playDirectionRawValue = playDirectionRawValue
         self._playEnableHighFrets = playEnableHighFrets
         self._playLessonStyle = playLessonStyle

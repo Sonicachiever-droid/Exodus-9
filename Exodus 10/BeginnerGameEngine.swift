@@ -35,6 +35,7 @@ final class BeginnerGameEngine {
     var bpm: Int = 120
     var useFlats: Bool = false
     var playRepetitions: Int = 1
+    var playInfiniteRepetitions: Bool = false
     var startingFret: Int = 0
 
     // MARK: - Current Generator (unified access)
@@ -245,7 +246,10 @@ final class BeginnerGameEngine {
         currentGenerator.advanceSequence()
 
         if currentGenerator.isSequenceComplete() {
-            if state.scaleRepetitionsRemaining <= 1 {
+            if playInfiniteRepetitions {
+                // Infinite mode: never trigger round shift, always reset for repetition
+                resetGeneratorForRepetition()
+            } else if state.scaleRepetitionsRemaining <= 1 {
                 if state.pendingRoundShiftBeatPosition == nil {
                     state.pendingRoundShiftBeatPosition = beatPosition + GameConstants.roundShiftDelayBeats
                 }
