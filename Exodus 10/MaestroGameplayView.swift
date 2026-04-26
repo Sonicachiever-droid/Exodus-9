@@ -974,6 +974,8 @@ struct MaestroGameplayView: View {
     @State private var startupSequenceActivated: Bool = false
     @State private var assetToNutBottomDelta: CGFloat? = nil
     @State private var isAutoPlayTriggered: Bool = false
+    @State private var correctAnswerSide: AnswerSide = .left
+    @State private var isResolvingAnswer: Bool = false
     @State private var gameplayMenuExpanded: Bool = false
     @State private var maestroStartButtonBlinkOn: Bool = false
     @State private var maestroStartButtonNextBlinkDate: Date? = nil
@@ -1754,9 +1756,8 @@ struct MaestroGameplayView: View {
         guard let nextDate = autoPlayNextDate, currentDate >= nextDate else { return }
 
         // Submit the correct answer
-        let correctSide: AnswerSide = leftChoiceNote == currentCorrectNote ? .left : .right
         isAutoPlayTriggered = true
-        submitAnswer(correctSide, force: true)
+        submitAnswer(correctAnswerSide, force: true)
         isAutoPlayTriggered = false
         autoPlayNextDate = currentDate.addingTimeInterval(0.38)
     }
@@ -1827,7 +1828,10 @@ struct MaestroGameplayView: View {
 
         }
 
-        let isCorrect = side == .left && leftChoiceNote == currentCorrectNote || side == .right && rightChoiceNote == currentCorrectNote
+        guard force || !isResolvingAnswer else { return }
+        isResolvingAnswer = true
+
+        let isCorrect = side == correctAnswerSide
         if isCorrect {
             withAnimation(.none) {
                 leftThumbState = .green
@@ -1981,6 +1985,7 @@ struct MaestroGameplayView: View {
 
         // Skip point earning for autoplay
         guard !isAutoPlayTriggered else {
+            isResolvingAnswer = false
             prepareCurrentQuestion()
             return
         }
@@ -2027,6 +2032,7 @@ struct MaestroGameplayView: View {
                 }
             }
         }
+        isResolvingAnswer = false
         prepareCurrentQuestion()
     }
 
@@ -2050,6 +2056,7 @@ struct MaestroGameplayView: View {
             rightChoiceNote = correctNote
         }
 
+        correctAnswerSide = correctOnLeft ? .left : .right
         currentCorrectNote = correctNote
 
         activePickedStringNumbers = currentPromptStrings

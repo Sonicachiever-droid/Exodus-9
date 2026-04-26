@@ -1400,6 +1400,7 @@ struct BeginnerGameplayView: View {
         return notes.prefix(count).joined(separator: " ")
     }
 
+
     private var shouldShowLegacyRoundZeroIntro: Bool {
         beginnerRoundOneStartingFret == 0
     }
@@ -2913,7 +2914,7 @@ struct BeginnerGameplayView: View {
 
         // Initialize Sequential style state if needed
         if lessonStyle == .sequential {
-            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: beginnerRuntime.currentPhaseNumber <= 2)
+            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: playDirection == .ascending)
             beginnerRuntime.sequentialRevealCount = 0
             beginnerRuntime.sequentialRevealStartBeatBucket = nil
             // Phase 1 has an announcement that will set roundOneIntroActive after 8 beats
@@ -3149,7 +3150,7 @@ struct BeginnerGameplayView: View {
         if lessonStyle == .random {
             randomNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats)
         } else if lessonStyle == .sequential {
-            sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: beginnerRuntime.currentPhaseNumber <= 2)
+            sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: playDirection == .ascending)
         }
         applyBeginnerBassTransposeForCurrentStage()
         prepareCurrentQuestion()
@@ -3903,7 +3904,7 @@ struct BeginnerGameplayView: View {
                     beginnerRuntime.sequentialRevealStartBeatBucket = nil
                     beginnerRuntime.answerBoxReady = false
                     let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
-                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: beginnerRuntime.currentPhaseNumber <= 2)
+                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: playDirection == .ascending)
                     prepareCurrentQuestion()
                 }
             }
