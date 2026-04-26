@@ -173,7 +173,7 @@ private struct Exodus10MenuSheet: View {
                             .pickerStyle(.segmented)
                         }
 
-                        Stepper("Repetitions: \(repetitions)", value: $repetitions, in: 1...8)
+                        Stepper("Repetitions: \(repetitions)", value: $repetitions, in: 1...Int.max)
 
                         Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(enableHighFrets ? 19 : 12))
 
