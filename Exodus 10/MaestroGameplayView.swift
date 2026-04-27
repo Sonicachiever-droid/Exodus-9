@@ -1785,6 +1785,7 @@ struct MaestroGameplayView: View {
         beatLightFlashOn = false
         beatLightLastProcessedBeat = nil
         autoPlayNextDate = nil
+        isResolvingAnswer = false
         midiEngine.setBassTransposeSemitones(0)
         prepareCurrentQuestion()
     }
