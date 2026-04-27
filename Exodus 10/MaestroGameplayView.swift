@@ -1745,6 +1745,7 @@ struct MaestroGameplayView: View {
         guard autoPlayEnabled,
               !isCodeScreensaverMode,
               !startupSequenceActivated,
+              !isResolvingAnswer,
               !isRoundPaused
         else {
             if !autoPlayEnabled {
@@ -1981,13 +1982,6 @@ struct MaestroGameplayView: View {
             animateBankResetToZero {
                 startGameFromBeginning()
             }
-            return
-        }
-
-        // Skip point earning for autoplay
-        guard !isAutoPlayTriggered else {
-            isResolvingAnswer = false
-            prepareCurrentQuestion()
             return
         }
 
