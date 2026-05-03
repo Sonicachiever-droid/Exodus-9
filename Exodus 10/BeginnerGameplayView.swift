@@ -2657,7 +2657,7 @@ struct BeginnerGameplayView: View {
 
         // Initialize Sequential style state if needed
         if lessonStyle == .sequential {
-            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: true)
+            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: isProgressionLowToHigh)
             beginnerRuntime.sequentialRevealCount = 0
             beginnerRuntime.sequentialRevealStartBeatBucket = nil
             beginnerRuntime.roundOneIntroActive = true
@@ -2879,7 +2879,7 @@ struct BeginnerGameplayView: View {
         // Generate new sequence for new fret and apply bass transpose
         let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
         if lessonStyle == .sequential {
-            sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: true)
+            sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: isProgressionLowToHigh)
         }
         applyBeginnerBassTransposeForCurrentStage()
         prepareCurrentQuestion()
@@ -3545,7 +3545,7 @@ struct BeginnerGameplayView: View {
                 // Wrong answer: reset reveal so all slots reappear and sequence restarts from beat 1
                 if !beginnerRuntime.isAutoPlayTriggered {
                     sequentialNoteGenerator.resetForNewFret()
-                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: beginnerUsesFlats, lowToHigh: true)
+                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: beginnerUsesFlats, lowToHigh: isProgressionLowToHigh)
                     beginnerRuntime.sequentialRevealCount = 0
                     beginnerRuntime.sequentialRevealStartBeatBucket = nil
                     beginnerRuntime.answerBoxReady = false
@@ -3574,7 +3574,7 @@ struct BeginnerGameplayView: View {
                     beginnerRuntime.sequentialRevealStartBeatBucket = nil
                     beginnerRuntime.answerBoxReady = false
                     let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
-                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: true)
+                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: isProgressionLowToHigh)
                     prepareCurrentQuestion()
                 }
             }
