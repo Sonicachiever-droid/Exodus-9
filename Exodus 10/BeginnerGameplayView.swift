@@ -715,6 +715,9 @@ private struct DeveloperConsoleFrame: View {
     let walletColor: Color
     let hideRoundLabel: Bool
     let pentatonicRevealComplete: Bool
+    let sequentialSlots: [(note: String, stringNumber: Int)]?
+    let sequentialRevealCount: Int
+    let sequentialAnsweredCount: Int
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
@@ -884,6 +887,27 @@ private struct DeveloperConsoleFrame: View {
                                             if !titleLine.isEmpty || !notesLine.isEmpty {
                                                 if titleLine.isEmpty {
                                                     // Single-line: sequential notes or chord name only
+                                                    if let slots = sequentialSlots {
+                                                        // String-aligned slots: one per physical string
+                                                        GeometryReader { slotGeo in
+                                                            let centers = GuitarStringLayout.stringCenters(containerWidth: slotGeo.size.width, neckWidth: slotGeo.size.width)
+                                                            ZStack {
+                                                                ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
+                                                                    let stringIndex = GuitarStringLayout.totalStrings - slot.stringNumber  // 6-low E→0, 1-high E→5
+                                                                    let xPos = stringIndex < centers.count ? centers[stringIndex] : slotGeo.size.width / 2
+                                                                    let isRevealed = idx < sequentialRevealCount
+                                                                    let isAnswered = idx < sequentialAnsweredCount
+                                                                    Text(slot.note)
+                                                                        .font(.system(size: min(slotGeo.size.height * 0.72, 28), weight: .black, design: .monospaced))
+                                                                        .foregroundStyle(Color.green.opacity(0.98))
+                                                                        .position(x: xPos, y: slotGeo.size.height / 2)
+                                                                        .opacity(isRevealed && !isAnswered ? 1 : 0)
+                                                                }
+                                                            }
+                                                        }
+                                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                        .allowsHitTesting(false)
+                                                    } else {
                                                     Text(notesLine)
                                                         .font(.system(size: 200, weight: .black, design: .monospaced))
                                                         .foregroundStyle(Color.green.opacity(0.98))
@@ -893,6 +917,7 @@ private struct DeveloperConsoleFrame: View {
                                                         .frame(maxWidth: hideRoundLabel ? width * 2 / 3 : .infinity, maxHeight: height * 2 / 3, alignment: hideRoundLabel ? .top : .bottom)
                                                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: hideRoundLabel ? .top : .bottom)
                                                         .allowsHitTesting(false)
+                                                    }
                                                 } else {
                                                     // Two-line: pentatonic title + notes
                                                     VStack(spacing: 0) {
@@ -1924,7 +1949,12 @@ struct BeginnerGameplayView: View {
                     repetitionCountColor: getRepetitionCountColor(),
                     walletColor: getWalletColor(),
                     hideRoundLabel: layoutMode == .beginner && lessonStyle == .chord,
-                    pentatonicRevealComplete: beginnerRuntime.answerBoxReady || beginnerRuntime.pendingRewardStageAdvance
+                    pentatonicRevealComplete: beginnerRuntime.answerBoxReady || beginnerRuntime.pendingRewardStageAdvance,
+                    sequentialSlots: (layoutMode == .beginner && lessonStyle == .sequential && !sequentialNoteGenerator.currentNoteSequence.isEmpty)
+                        ? zip(sequentialNoteGenerator.currentNoteSequence, sequentialNoteGenerator.noteStringMap).map { (note: $0, stringNumber: $1) }
+                        : nil,
+                    sequentialRevealCount: min(beginnerRuntime.sequentialRevealCount, sequentialNoteGenerator.currentNoteSequence.count),
+                    sequentialAnsweredCount: sequentialNoteGenerator.sequenceProgressIndex
                 )
                 .position(x: proxy.size.width / 2, y: topStatusCenterY)
                 .allowsHitTesting(false)
@@ -3511,7 +3541,17 @@ struct BeginnerGameplayView: View {
             guard !sequentialNoteGenerator.isSequenceComplete() else { return }
 
             // Validate: note must match AND must not reuse an already-played string for that note
-            guard sequentialNoteGenerator.isValidAnswer(note: selectedNote, string: selectedString) else { return }
+            guard sequentialNoteGenerator.isValidAnswer(note: selectedNote, string: selectedString) else {
+                // Wrong answer: reset reveal so all slots reappear and sequence restarts from beat 1
+                if !beginnerRuntime.isAutoPlayTriggered {
+                    sequentialNoteGenerator.resetForNewFret()
+                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: beginnerUsesFlats, lowToHigh: true)
+                    beginnerRuntime.sequentialRevealCount = 0
+                    beginnerRuntime.sequentialRevealStartBeatBucket = nil
+                    beginnerRuntime.answerBoxReady = false
+                }
+                return
+            }
 
             // Correct answer - light up the button
             beginnerPressedButtonIndex = buttonIndex
