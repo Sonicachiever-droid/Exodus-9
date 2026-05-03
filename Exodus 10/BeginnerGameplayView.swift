@@ -3,7 +3,7 @@ import Combine
 import AVFoundation
 
 // MARK: - Types and components from extracted files
-// Types.swift contains: GameplayMenuOption, RefretMode, GameplayModeVariant, AnswerSide, LayoutMode, BeginnerCoursePhase, BeginnerRoundZeroIntroDisplayPhase, HighlightWindowShape, FretMath, GuitarStringLayout, baselineNutTargetY, resolvedNeckTopY
+// Types.swift contains: GameplayMenuOption, RefretMode, GameplayModeVariant, AnswerSide, LayoutMode, BeginnerRoundZeroIntroDisplayPhase, HighlightWindowShape, FretMath, GuitarStringLayout, baselineNutTargetY, resolvedNeckTopY
 // ViewComponents.swift contains: StringLineOverlay, MiniTVFrame, ThumbButtonView
 
 private struct WhiteNoteBoxOverlay: View {
@@ -349,7 +349,7 @@ private struct GameplayControlPlateShell: View {
 private struct StartupSequenceView: View {
     enum Phase {
         case systemOnline
-        case phaseOne
+        case sequenceOne
         case armed
     }
 
@@ -400,7 +400,7 @@ private struct StartupSequenceView: View {
         if elapsed < secondBlockDuration {
             let localElapsed = elapsed - firstBlockDuration
             let isVisible = Int(localElapsed / secondFlashPeriod).isMultiple(of: 2)
-            return ("PHASE 1", Color.red.opacity(0.98), isVisible, .phaseOne)
+            return ("READY", Color.red.opacity(0.98), isVisible, .sequenceOne)
         }
 
         let localElapsed = elapsed - secondBlockDuration
@@ -705,14 +705,12 @@ private struct DeveloperConsoleFrame: View {
     let startupShowFullSequence: Bool
     let startupArmedText: String
     let beginnerRoundStatusText: String?
-    let phaseAnnouncementText: AttributedString?
-    let phaseCompletedMessageText: AttributedString?
+    let directionReversingText: String?
     let celebrationActive: Bool
     let celebrationFlashOn: Bool
     let centeredStatusMessage: String?
     let centeredStatusColor: Color
     let currentRound: Int
-    let currentRoundInPhase: Int
     let repetitionCountColor: Color
     let walletColor: Color
     let hideRoundLabel: Bool
@@ -834,22 +832,22 @@ private struct DeveloperConsoleFrame: View {
                                 } else {
                                     ZStack {
                                         VStack(spacing: 0) {
-                                            // Only show 3x/Round/Wallet line when phase announcement or completed message is not active
-                                            if phaseAnnouncementText == nil && phaseCompletedMessageText == nil {
+                                            // Only show 3x/Round/Wallet line when direction reversing message is not active
+                                            if directionReversingText == nil {
                                                 HStack {
                                                     VStack(alignment: .leading, spacing: 0) {
                                                         Text(scaleRepetitionText)
                                                             .font(.system(size: 20, weight: .black, design: .monospaced))
                                                             .foregroundStyle(repetitionCountColor)
                                                         if hideRoundLabel {
-                                                            Text("R\(currentRoundInPhase)")
+                                                            Text("R\(currentRound)")
                                                                 .font(.system(size: 20, weight: .black, design: .monospaced))
                                                                 .foregroundStyle(Color.white)
                                                         }
                                                     }
                                                     Spacer()
                                                     if !hideRoundLabel {
-                                                        Text("Round \(currentRoundInPhase)")
+                                                        Text("Round \(currentRound)")
                                                             .font(.system(size: min(width * 0.095, 26), weight: .black, design: .monospaced))
                                                             .foregroundStyle(Color.white)
                                                         Spacer()
@@ -871,25 +869,12 @@ private struct DeveloperConsoleFrame: View {
                                         }
                                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-                                        if let phaseAnnouncementText {
-                                            Text(phaseAnnouncementText)
-                                                .font(.system(size: min(width * 0.095, 26), weight: .black, design: .monospaced))
-                                                .minimumScaleFactor(0.7)
-                                                .lineLimit(4)
-                                                .multilineTextAlignment(.center)
-                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 10)
-                                                .allowsHitTesting(false)
-                                        } else if let phaseCompletedMessageText {
-                                            Text(phaseCompletedMessageText)
-                                                .font(.system(size: min(width * 0.095, 26), weight: .black, design: .monospaced))
-                                                .minimumScaleFactor(0.7)
-                                                .lineLimit(2)
-                                                .multilineTextAlignment(.center)
-                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 10)
+                                        if let directionReversingText {
+                                            Text(directionReversingText)
+                                                .font(.system(size: 18, weight: .black, design: .monospaced))
+                                                .foregroundStyle(.white)
+                                                .shadow(color: .black, radius: 4)
+                                                .padding(20)
                                                 .allowsHitTesting(false)
                                         } else if let beginnerRoundStatusText {
                                             let statusLines = beginnerRoundStatusText.components(separatedBy: "\n")
@@ -1048,7 +1033,6 @@ private struct DeveloperTVStreakMeterView: View {
 struct BeginnerGameplayView: View {
     let onMenuSelection: ((GameplayMenuOption) -> Void)?
     let selectedMode: RefretMode
-    let selectedPhase: Int
     let beatBPM: Int
     let beatVolume: Double
     let stringVolume: Double
@@ -1073,12 +1057,11 @@ struct BeginnerGameplayView: View {
     private var maxFretOffset: Int { totalFrets }
     private var minFretOffset: Int { -totalFrets }
     private var modeVariant: GameplayModeVariant {
-        // For phases 1-8 in beginner mode, use effective lesson style
         if layoutMode == .beginner {
             switch effectiveLessonStyle {
             case "chord":
                 return .chord
-            case "random", "sequential":
+            case "sequential":
                 return .freestyle
             default:
                 break
@@ -1104,33 +1087,13 @@ struct BeginnerGameplayView: View {
         }
     }
 
-    private var isPhaseDescending: Bool {
-        [2, 4, 6, 8].contains(beginnerRuntime.currentPhaseNumber)
-    }
-
-    private var usesRandomStringOrder: Bool {
-        [5, 6].contains(beginnerRuntime.currentPhaseNumber)
-    }
-
     private var effectiveLessonStyle: String {
-        switch beginnerRuntime.currentPhaseNumber {
-        case 1...4:
-            // Default to sequential for new players, but allow explicit chord or random override
-            if lessonStyle == .chord || lessonStyle == .random {
-                return playLessonStyle
-            }
+        switch lessonStyle {
+        case .sequential:
             return "sequential"
-        case 5...6:
+        case .chord:
             return "chord"
-        case 7...8:
-            return "random"
-        default:
-            return playLessonStyle
         }
-    }
-
-    private var phaseLabel: String {
-        "PHASE \(selectedPhase)"
     }
 
     private var showMaestroOverlays: Bool {
@@ -1179,14 +1142,6 @@ struct BeginnerGameplayView: View {
         2: "B",
         1: "E"
     ]
-    private let phaseOneHintByString: [Int: String] = [
-        1: "Old McDonald has a farm...?",
-        2: "What note is a fourth below E?",
-        3: "What note is a third below B?",
-        4: "What note is a fourth below G?",
-        5: "What note is a fourth below D?",
-        6: "What note is a fourth below A?"
-    ]
     private let codenameNemoEnabled: Bool = false
     private let scaleLengthInches: Double = 25.5
     private let debugGridRows: Int = 8
@@ -1205,14 +1160,11 @@ struct BeginnerGameplayView: View {
     
     // Chord system integration
     @StateObject private var chordGenerator = ChordGenerator()
-    // Random style integration
-    @StateObject private var randomNoteGenerator = RandomNoteGenerator()
     // Sequential style integration
     @StateObject private var sequentialNoteGenerator = SequentialNoteGenerator()
     // Unified generator access — no more if/else chains at callsites
     private var currentGenerator: any NoteSequenceGenerator {
         switch lessonStyle {
-        case .random:      return randomNoteGenerator
         case .sequential:  return sequentialNoteGenerator
         case .chord:       return sequentialNoteGenerator // chord uses its own system
         }
@@ -1405,37 +1357,6 @@ struct BeginnerGameplayView: View {
         beginnerRoundOneStartingFret == 0
     }
 
-    private func getPhaseAttributes(for phaseNumber: Int) -> [String] {
-        switch phaseNumber {
-        case 1:
-            return ["Sequential", "Low to High", "Ascending"]
-        case 2:
-            return ["Sequential", "Low to High", "Descending"]
-        case 3:
-            return ["Sequential", "High to Low", "Ascending"]
-        case 4:
-            return ["Sequential", "High to Low", "Descending"]
-        case 5:
-            return ["Chord", "Ascending"]
-        case 6:
-            return ["Chord", "Descending"]
-        case 7:
-            return ["Random", "Ascending"]
-        case 8:
-            return ["Random", "Descending"]
-        default:
-            return ["Sequential", "Low to High", "Ascending"]
-        }
-    }
-
-    private func getPhaseAttributeColors(for phaseNumber: Int) -> [Color] {
-        return [.green, .yellow, .orange, .white]
-    }
-
-    private func getPhaseNumberColor() -> Color {
-        .cyan
-    }
-
     private func getWalletColor() -> Color {
         .green
     }
@@ -1444,92 +1365,8 @@ struct BeginnerGameplayView: View {
         .pink
     }
 
-    private var phaseAnnouncementText: AttributedString? {
-        guard layoutMode == .beginner else { return nil }
-        guard !isCodeScreensaverMode else { return nil }
-        guard let startBeat = beginnerRuntime.phaseAnnouncementStartBeat else { return nil }
-
-        let elapsedBeats = roundRevealElapsedBeats - startBeat
-        let phaseNum = beginnerRuntime.currentPhaseNumber
-
-        // Phase number display (beats 0-2)
-        if elapsedBeats < 2.0 {
-            var attributedString = AttributedString("PHASE \(phaseNum)")
-            attributedString.foregroundColor = getPhaseNumberColor()
-            return attributedString
-        }
-
-        // Attributes display (beats 2-8)
-        if elapsedBeats < 8.0 {
-            let attributeBeat = Int(floor(elapsedBeats - 2.0))
-            let attributes = getPhaseAttributes(for: phaseNum)
-            let colors = getPhaseAttributeColors(for: phaseNum)
-            var attributedString = AttributedString("")
-
-            let hasThirdAttribute = attributes.count >= 3
-
-            if attributeBeat >= 0 {
-                attributedString += AttributedString(attributes[0])
-                attributedString.foregroundColor = colors[0]
-            }
-            if attributeBeat >= 2, attributes.count >= 2 {
-                attributedString += AttributedString("\n" + attributes[1])
-                let range = attributedString.range(of: attributes[1])
-                if let range = range {
-                    attributedString[range].foregroundColor = colors[1]
-                }
-            }
-            if attributeBeat >= 4, hasThirdAttribute {
-                attributedString += AttributedString("\n" + attributes[2])
-                let range = attributedString.range(of: attributes[2])
-                if let range = range {
-                    attributedString[range].foregroundColor = colors[2]
-                }
-            }
-            return attributedString
-        }
-
-        return nil
-    }
-
-    private var phaseCompletedMessageText: AttributedString? {
-        guard layoutMode == .beginner else { return nil }
-        guard !isCodeScreensaverMode else { return nil }
-        guard beginnerRuntime.phaseCompletedMessagePending else { return nil }
-        guard let startBeat = beginnerRuntime.phaseCompletedMessageStartBeat else { return nil }
-
-        let elapsedBeats = roundRevealElapsedBeats - startBeat
-        let completedPhaseNum = beginnerRuntime.completedPhaseNumber
-
-        // Show "PHASE N COMPLETED" for 14 beats
-        if elapsedBeats < 14.0 {
-            var attributedString = AttributedString("PHASE \(completedPhaseNum) COMPLETED")
-            attributedString.foregroundColor = .green
-            return attributedString
-        }
-
-        return nil
-    }
-
     private var beginnerRoundStatusText: String? {
         guard layoutMode == .beginner else { return nil }
-
-        // If phase announcement is active, return nil (will use phaseAnnouncementText instead)
-        if beginnerRuntime.phaseAnnouncementStartBeat != nil {
-            return nil
-        }
-
-        if beginnerRuntime.phaseCompletedMessagePending { return nil }
-
-        // Random style: show revealed notes one by one on the beat
-        if lessonStyle == .random {
-            guard beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 4 else { return nil }
-            guard !isCodeScreensaverMode else { return nil }
-
-            let revealCount = min(beginnerRuntime.randomRevealCount, randomNoteGenerator.currentNoteSequence.count)
-            let revealedNotes = randomNoteGenerator.currentNoteSequence.prefix(revealCount).joined(separator: " ")
-            return revealedNotes
-        }
 
         // Sequential style: show revealed notes one by one
         if lessonStyle == .sequential {
@@ -1541,65 +1378,29 @@ struct BeginnerGameplayView: View {
         }
 
         // Chord style: existing behavior
-        // Odd phases (1,3) use ascending display logic
-        if beginnerRuntime.currentPhaseNumber % 2 == 1 {
-            if !beginnerRuntime.answerBoxReady,
-               !beginnerRuntime.roundOneIntroActive {
-                return nil
-            }
-            switch beginnerRoundZeroIntroDisplayPhase {
-            case .centeredRoundZeroChordMode:
-                return nil
-            case .roundZeroHeader:
-                return beginnerCurrentScaleTitle
-            case .roundZeroScaleTitle:
-                return beginnerCurrentScaleTitle
-            case .noteReveal, .inactive:
-                break
-            }
-            let progressLine = beginnerPentatonicProgressText
-            if progressLine.isEmpty {
-                return beginnerCurrentScaleTitle
-            }
-            return "\(beginnerCurrentScaleTitle)\n\(progressLine)"
-        } else {
-            // Even phases (2,4) - descending
-            return "PHASE \(beginnerRuntime.currentPhaseNumber)"
+        if !beginnerRuntime.answerBoxReady,
+           !beginnerRuntime.roundOneIntroActive {
+            return nil
         }
+        switch beginnerRoundZeroIntroDisplayPhase {
+        case .centeredRoundZeroChordMode:
+            return nil
+        case .roundZeroHeader:
+            return beginnerCurrentScaleTitle
+        case .roundZeroScaleTitle:
+            return beginnerCurrentScaleTitle
+        case .noteReveal, .inactive:
+            break
+        }
+        let progressLine = beginnerPentatonicProgressText
+        if progressLine.isEmpty {
+            return beginnerCurrentScaleTitle
+        }
+        return "\(beginnerCurrentScaleTitle)\n\(progressLine)"
     }
 
     private var beginnerCenteredStatusMessage: String? {
         guard layoutMode == .beginner else { return nil }
-
-        // Phase > 1: always show "PHASE N ARMED" regardless of lesson style
-        if beginnerRuntime.currentPhaseNumber > 1 {
-            if isCodeScreensaverMode && startupSequenceActivated {
-                let startupState = StartupSequenceView.state(
-                    for: startupSequenceElapsed,
-                    showFullSequence: false,
-                    armedText: beginnerStartupArmedText
-                )
-                if startupState.phase == .armed {
-                    return "PHASE \(beginnerRuntime.currentPhaseNumber)\nARMED"
-                }
-            }
-            return nil
-        }
-
-        // Random style: show intro message during startup
-        if lessonStyle == .random {
-            if isCodeScreensaverMode && startupSequenceActivated {
-                let startupState = StartupSequenceView.state(
-                    for: startupSequenceElapsed,
-                    showFullSequence: false,
-                    armedText: "RANDOM MODE ARMED"
-                )
-                if startupState.phase == .armed {
-                    return "RANDOM MODE\nARMED"
-                }
-            }
-            return nil
-        }
 
         // Sequential style: show intro message during startup
         if lessonStyle == .sequential {
@@ -1620,15 +1421,11 @@ struct BeginnerGameplayView: View {
     }
 
     private var beginnerCenteredStatusColor: Color {
-        if lessonStyle == .random {
-            return beginnerRuntime.celebrationFlashOn ? Color.green.opacity(0.98) : Color.green.opacity(0.28)
-        }
-        return beginnerRuntime.celebrationFlashOn ? Color.green.opacity(0.98) : Color.green.opacity(0.28)
+        beginnerRuntime.celebrationFlashOn ? Color.green.opacity(0.98) : Color.green.opacity(0.28)
     }
 
     private var beginnerRoundZeroIntroDisplayPhase: BeginnerRoundZeroIntroDisplayPhase {
         guard layoutMode == .beginner,
-              beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 4,
               beginnerRuntime.roundOneIntroActive,
               beginnerRuntime.showRoundZeroIntroSequence
         else {
@@ -1649,14 +1446,10 @@ struct BeginnerGameplayView: View {
     }
 
     private var beginnerCelebrationActive: Bool {
-        // Celebration is active when phase is complete but we're not transitioning
-        // This is handled by phase transition state, not needed for gameplay guards
-        false // Simplified - celebration state managed by transition logic
+        false
     }
 
     private var beginnerAcceptsGameplayAnswers: Bool {
-        // Accept answers in all active gameplay phases (1-4)
-        guard beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 4 else { return false }
         return !beginnerRuntime.roundOneIntroActive
     }
 
@@ -1701,7 +1494,7 @@ struct BeginnerGameplayView: View {
 
     private var isInitialRoundOneScaleIntro: Bool {
         layoutMode == .beginner
-            && beginnerRuntime.currentPhaseNumber == 1
+            && lessonStyle == .sequential
             && beginnerRuntime.scaleStageIndex == 0
             && currentRound == beginnerRoundOneStartingFret
     }
@@ -1714,7 +1507,7 @@ struct BeginnerGameplayView: View {
     private var backingTrackShouldPlayInGameplay: Bool {
         guard layoutMode == .beginner else { return false }
         guard !isCodeScreensaverMode else { return false }
-        return beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 8
+        return true
     }
 
     private var startupStartButtonAttentionActive: Bool {
@@ -1752,14 +1545,9 @@ struct BeginnerGameplayView: View {
     }
 
     private var beginnerStartupArmedText: String {
-        // Any phase above 1 shows "PHASE N ARMED"
-        if layoutMode == .beginner, beginnerRuntime.currentPhaseNumber > 1 {
-            return "PHASE \(beginnerRuntime.currentPhaseNumber) ARMED"
-        }
         if layoutMode == .beginner {
-            if lessonStyle == .sequential { return "SEQUENTIAL MODE ARMED" }
-            if lessonStyle == .random { return "RANDOM MODE ARMED" }
-            return "CHORD MODE ARMED"
+            if lessonStyle == .sequential { return "SEQUENTIAL ARMED" }
+            return "CHORD ARMED"
         }
         return "Memorization Sequence Armed"
     }
@@ -1767,7 +1555,6 @@ struct BeginnerGameplayView: View {
     init(
         onMenuSelection: ((GameplayMenuOption) -> Void)? = nil,
         selectedMode: RefretMode = .freestyle,
-        selectedPhase: Int = 1,
         beatBPM: Int = 80,
         beatVolume: Double = 0.8,
         stringVolume: Double = 0.8,
@@ -1783,7 +1570,6 @@ struct BeginnerGameplayView: View {
     ) {
         self.onMenuSelection = onMenuSelection
         self.selectedMode = selectedMode
-        self.selectedPhase = min(max(selectedPhase, 1), 4)
         self.beatBPM = beatBPM
         self.beatVolume = beatVolume
         self.stringVolume = stringVolume
@@ -1847,11 +1633,10 @@ struct BeginnerGameplayView: View {
             let isGameplayStarted = !isCodeScreensaverMode
             let displayedFretStatusLabel = isGameplayStarted ? fretStatusLabel : ""
             let displayedStringStatusLabel: String = {
-                if lessonStyle == .random { return "RANDOM STYLE" }
                 if lessonStyle == .sequential { return "SEQUENTIAL MODE" }
                 return isGameplayStarted ? stringStatusLabel : ""
             }()
-            let roundStatusLabel = "ROUND \(beginnerRuntime.currentRoundInPhase)"
+            let roundStatusLabel = "ROUND \(currentRound)"
             let screenBannerFont = UIFont.systemFont(ofSize: 20, weight: .semibold)
             let screenMeasuredWidth = max(
                 textWidth(for: fretStatusLabel, font: screenBannerFont),
@@ -1951,7 +1736,7 @@ struct BeginnerGameplayView: View {
             let screensaverThumbState: ThumbGlowState = {
                 switch startupState.phase {
                 case .systemOnline: return startupState.isVisible ? .orange : .neutral
-                case .phaseOne: return startupState.isVisible ? .red : .neutral
+                case .sequenceOne: return startupState.isVisible ? .red : .neutral
                 case .armed: return startupState.isVisible ? .green : .neutral
                 }
             }()
@@ -2119,7 +1904,7 @@ struct BeginnerGameplayView: View {
                     height: topStatusOuterHeight,
                     isScreensaverMode: isCodeScreensaverMode,
                     layoutMode: layoutMode,
-                    roundTitle: "\(phaseLabel) • \(roundStatusLabel)",
+                    roundTitle: roundStatusLabel,
                     fretTitle: displayedFretStatusLabel,
                     stringTitle: displayedStringStatusLabel,
                     bankText: "$\(displayedBankDollars)",
@@ -2130,14 +1915,12 @@ struct BeginnerGameplayView: View {
                     startupShowFullSequence: layoutMode != .beginner,
                     startupArmedText: beginnerStartupArmedText,
                     beginnerRoundStatusText: beginnerRoundStatusText,
-                    phaseAnnouncementText: phaseAnnouncementText,
-                    phaseCompletedMessageText: phaseCompletedMessageText,
+                    directionReversingText: nil,
                     celebrationActive: beginnerCelebrationActive,
                     celebrationFlashOn: beginnerRuntime.celebrationFlashOn,
                     centeredStatusMessage: beginnerCenteredStatusMessage,
                     centeredStatusColor: beginnerCenteredStatusColor,
                     currentRound: currentRound,
-                    currentRoundInPhase: beginnerRuntime.currentRoundInPhase,
                     repetitionCountColor: getRepetitionCountColor(),
                     walletColor: getWalletColor(),
                     hideRoundLabel: layoutMode == .beginner && lessonStyle == .chord,
@@ -2159,10 +1942,6 @@ struct BeginnerGameplayView: View {
                     // Show answer box when note is selected, regardless of game state
                     if hasBeginnerSelectedNote && beginnerRuntime.answerBoxReady {
                         return true
-                    }
-                    // Random mode: answerBoxReady is set when all 6 notes revealed
-                    if lessonStyle == .random {
-                        return beginnerRuntime.answerBoxReady && hasBeginnerSelectedNote
                     }
                     // Chord mode: need pentatonic reveal complete
                     return beginnerRuntime.answerBoxReady
@@ -2525,10 +2304,6 @@ struct BeginnerGameplayView: View {
             .onChange(of: audioSettings.selectedBackingArrangement) { _, _ in
                 syncBackingTrackPlayback()
             }
-            .onChange(of: beginnerRuntime.coursePhase) { _, _ in
-                applyBeginnerBassTransposeForCurrentStage()
-                syncBackingTrackPlayback()
-            }
             .onChange(of: beginnerRuntime.scaleStageIndex) { _, _ in
                 applyBeginnerBassTransposeForCurrentStage()
             }
@@ -2657,38 +2432,7 @@ struct BeginnerGameplayView: View {
             handleStartupSpeech(for: startupState.phase)
         }
 
-        // Clear phase announcement after 8 beats
-        if let startBeat = beginnerRuntime.phaseAnnouncementStartBeat {
-            let elapsedBeats = roundRevealElapsedBeats - startBeat
-            if elapsedBeats >= 8.0 {
-                beginnerRuntime.phaseAnnouncementStartBeat = nil
-                // Set roundOneIntroActive to trigger reveal pattern after phase announcement completes
-                if layoutMode == .beginner && (lessonStyle == .sequential || lessonStyle == .random || lessonStyle == .chord) {
-                    beginnerRuntime.roundOneIntroActive = true
-                    beginnerRuntime.roundOneSequenceStartDate = date
-                    let currentBeatBucket = Int(floor(roundRevealElapsedBeats))
-                    if lessonStyle == .sequential {
-                        beginnerRuntime.sequentialRevealStartBeatBucket = currentBeatBucket
-                    } else if lessonStyle == .random {
-                        beginnerRuntime.randomRevealStartBeatBucket = currentBeatBucket
-                    } else if lessonStyle == .chord {
-                        beginnerRuntime.revealStartBeatBucket = currentBeatBucket
-                    }
-                }
-            }
-        }
-
         handlePendingMidiStopIfNeeded()
-
-        // Auto-advance from phase completed message to next phase armed state (wall-clock, fires even while armed)
-        if layoutMode == .beginner,
-           let autoAdvanceDate = beginnerRuntime.pendingPhaseCompletedAutoAdvanceDate,
-           date >= autoAdvanceDate {
-            beginnerRuntime.pendingPhaseCompletedAutoAdvanceDate = nil
-            beginnerRuntime.phaseCompletedMessagePending = false
-            beginnerRuntime.phaseCompletedMessageStartBeat = nil
-            advanceToNextPhaseArmedState()
-        }
 
         if isRoundArmed || isRoundPaused {
             beginnerRuntime.beatLightFlashOn = false
@@ -2757,18 +2501,10 @@ struct BeginnerGameplayView: View {
               !isRoundPaused
         else { return }
 
-        guard beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 8 else {
-            return
-        }
-
         beginnerRuntime.scaleRepetitionsRemaining = beginnerTargetScaleRepetitionsRemaining()
     }
 
     private func beginnerTargetScaleRepetitionsRemaining() -> Int {
-        // Even phases (2,4,6,8) are descending
-        if beginnerRuntime.currentPhaseNumber % 2 == 0 {
-            return max(effectivePlayRepetitions - beginnerRuntime.correctAnswersAtCurrentFret, 1)
-        }
         return effectivePlayRepetitions
     }
 
@@ -2805,7 +2541,6 @@ struct BeginnerGameplayView: View {
         showDeveloperPrompt("MODE: \(selectedMode.rawValue.uppercased())")
         questionBoxIntroProgress = isCodeScreensaverMode ? 0 : 1
         beginnerRuntime.answerBoxReady = layoutMode == .beginner ? false : !isCodeScreensaverMode
-        beginnerRuntime.coursePhase = .round1Ascending
         isRoundArmed = layoutMode == .beginner
         isRoundPaused = false
         roundRevealElapsedBeats = 0
@@ -2814,19 +2549,11 @@ struct BeginnerGameplayView: View {
 
     private func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
         if layoutMode == .beginner {
-            // Phase 1 starts at open strings (fret 0), ascending
-            if beginnerRuntime.currentPhaseNumber == 1 {
-                currentRound = beginnerRoundOneStartingFret
-                isDescendingPhase = beginnerRoundOneStartsDescending
-            } else {
-                // Other phases - set based on odd/even
-                let isAscendingPhase = beginnerRuntime.currentPhaseNumber % 2 == 1
-                currentRound = isAscendingPhase ? 0 : 12
-                isDescendingPhase = !isAscendingPhase
-            }
+            currentRound = beginnerRoundOneStartingFret
+            isDescendingPhase = beginnerRoundOneStartsDescending
         } else {
-            currentRound = isPhaseDescending ? 12 : 0
-            isDescendingPhase = isPhaseDescending
+            currentRound = playDirection == .descending ? 12 : 0
+            isDescendingPhase = playDirection == .descending
         }
         if animateNeckSlideFromStartup {
             startupNeckVisualsHidden = true
@@ -2881,7 +2608,6 @@ struct BeginnerGameplayView: View {
         beginnerRuntime.roundOneSequenceStartDate = nil
         beginnerRuntime.beatLightIntroMeasureSkipped = false
         beginnerRuntime.scaleRepetitionsRemaining = effectivePlayRepetitions
-        beginnerRuntime.currentRoundInPhase = 1
         beginnerRuntime.pendingRoundShiftBeatPosition = nil
         beginnerRuntime.scaleSequenceIndex = 0
         beginnerRuntime.scaleStageIndex = 0
@@ -2899,30 +2625,13 @@ struct BeginnerGameplayView: View {
         beginnerRuntime.rewardScheduledNoteTextByString = [:]
         beginnerRuntime.rewardSustainMultiplier = 3.0
 
-        // Initialize Random style state if needed
-        if lessonStyle == .random {
-            randomNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats)
-            beginnerRuntime.randomRevealCount = 0
-            beginnerRuntime.randomRevealStartBeatBucket = nil
-            // Phase 1 has an announcement that will set roundOneIntroActive after 8 beats
-            // Phases > 1 have no announcement, so set it now
-            if beginnerRuntime.currentPhaseNumber > 1 {
-                beginnerRuntime.roundOneIntroActive = true
-                beginnerRuntime.roundOneSequenceStartDate = Date()
-            }
-        }
-
         // Initialize Sequential style state if needed
         if lessonStyle == .sequential {
-            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: playDirection == .ascending)
+            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: true)
             beginnerRuntime.sequentialRevealCount = 0
             beginnerRuntime.sequentialRevealStartBeatBucket = nil
-            // Phase 1 has an announcement that will set roundOneIntroActive after 8 beats
-            // Phases > 1 have no announcement, so set it now
-            if beginnerRuntime.currentPhaseNumber > 1 {
-                beginnerRuntime.roundOneIntroActive = true
-                beginnerRuntime.roundOneSequenceStartDate = Date()
-            }
+            beginnerRuntime.roundOneIntroActive = true
+            beginnerRuntime.roundOneSequenceStartDate = Date()
         }
 
         applyBeginnerBassTransposeForCurrentStage()
@@ -2930,9 +2639,7 @@ struct BeginnerGameplayView: View {
     }
 
     private func beginnerRewardPolicyForCurrentStage() -> BeginnerRewardPolicy? {
-        guard layoutMode == .beginner,
-              beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 8
-        else { return nil }
+        guard layoutMode == .beginner else { return nil }
 
         let currentFret = max(currentRound, 0)
         let specificKey = BeginnerRewardPolicyKey(stageIndex: beginnerRuntime.scaleStageIndex, fret: currentFret)
@@ -3096,7 +2803,7 @@ struct BeginnerGameplayView: View {
     }
 
     private func handlePendingRoundShiftIfNeeded() {
-        guard (lessonStyle == .random || lessonStyle == .sequential),
+        guard lessonStyle == .sequential,
               let targetBeatPosition = beginnerRuntime.pendingRoundShiftBeatPosition else { return }
 
         let currentBeatPosition = roundRevealElapsedBeats
@@ -3112,13 +2819,7 @@ struct BeginnerGameplayView: View {
 
         // Reset mode state for new fret
         beginnerRuntime.scaleRepetitionsRemaining = effectivePlayRepetitions
-        if lessonStyle == .random {
-            randomNoteGenerator.resetForNewFret()
-            beginnerRuntime.randomRevealCount = 0
-            beginnerRuntime.randomRevealStartBeatBucket = nil
-            beginnerRuntime.roundOneIntroActive = true
-            beginnerRuntime.roundOneSequenceStartDate = Date()
-        } else if lessonStyle == .sequential {
+        if lessonStyle == .sequential {
             sequentialNoteGenerator.resetForNewFret()
             beginnerRuntime.sequentialRevealCount = 0
             beginnerRuntime.sequentialRevealStartBeatBucket = nil
@@ -3126,31 +2827,29 @@ struct BeginnerGameplayView: View {
             beginnerRuntime.roundOneSequenceStartDate = Date()
         }
 
-        // Advance to next fret (or celebrate if at boundary)
+        // Advance to next fret (or reverse direction at boundary)
         if !isDescendingPhase {
             if currentRound < beginnerUpperFretBoundary {
                 currentRound += 1
-                beginnerRuntime.currentRoundInPhase += 1  // Increment round counter within phase
             } else {
-                handlePhaseCompletion()
-                return
+                // At upper boundary - reverse direction
+                isDescendingPhase = true
+                currentRound = beginnerUpperFretBoundary - 1
             }
         } else {
             if currentRound > beginnerLowerFretBoundary {
                 currentRound -= 1
-                beginnerRuntime.currentRoundInPhase += 1  // Increment round counter within phase
             } else {
-                handlePhaseCompletion()
-                return
+                // At lower boundary - reverse direction
+                isDescendingPhase = false
+                currentRound = 1
             }
         }
 
         // Generate new sequence for new fret and apply bass transpose
         let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
-        if lessonStyle == .random {
-            randomNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats)
-        } else if lessonStyle == .sequential {
-            sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: playDirection == .ascending)
+        if lessonStyle == .sequential {
+            sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: true)
         }
         applyBeginnerBassTransposeForCurrentStage()
         prepareCurrentQuestion()
@@ -3194,7 +2893,15 @@ struct BeginnerGameplayView: View {
                 beginnerRuntime.revealStartBeatBucket = nil
                 beginnerRuntime.introStartBeatBucket = nil
                 beginnerRuntime.rewardSelectedString = nil
-                beginnerRuntime.currentRoundInPhase += 1
+            } else {
+                // At boundary - reverse direction
+                if isDescendingPhase {
+                    isDescendingPhase = false
+                    currentRound = 1
+                } else {
+                    isDescendingPhase = true
+                    currentRound = beginnerUpperFretBoundary - 1
+                }
             }
         } else {
             beginnerRuntime.scaleStageIndex = min(beginnerRuntime.scaleStageIndex + 1, beginnerScaleStages.count - 1)
@@ -3234,32 +2941,21 @@ struct BeginnerGameplayView: View {
             return
         }
 
-        // Odd phases (1,3) are ascending
-        if beginnerRuntime.currentPhaseNumber % 2 == 1 {
-            if lessonStyle == .random || lessonStyle == .sequential {
-                // Random/Sequential style: transpose bass to match E string note at current fret
-                // E string at fret 0 = E (MIDI 40), fret 1 = F (MIDI 41), etc.
+        if !isDescendingPhase {
+            if lessonStyle == .sequential {
                 let transposeSemitones = max(currentRound, 0)
                 midiEngine.setBassTransposeSemitones(transposeSemitones)
             } else {
-                // Chord style: existing behavior
                 midiEngine.setBassTransposeSemitones(beginnerCurrentBassSemitoneTarget)
             }
             return
         }
 
-        // Even phases (2,4,6,8) are descending
-        if beginnerRuntime.currentPhaseNumber % 2 == 0 {
-            midiEngine.setBassTransposeSemitones(max(currentRound, 0) % 12)
-            return
-        }
-
-        midiEngine.setBassTransposeSemitones(0)
+        midiEngine.setBassTransposeSemitones(max(currentRound, 0) % 12)
     }
 
     private func ensureBeginnerRoundOneRevealSequenceStarted(currentDate: Date) {
         guard layoutMode == .beginner,
-              beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 4,
               !isCodeScreensaverMode,
               !startupSequenceActivated,
               lessonStyle == .chord,
@@ -3318,8 +3014,7 @@ struct BeginnerGameplayView: View {
 
     private func updateNoteRevealProgressionIfNeeded() {
         guard layoutMode == .beginner,
-              lessonStyle == .random || lessonStyle == .sequential,
-              beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 4,
+              lessonStyle == .sequential,
               !isCodeScreensaverMode,
               !startupSequenceActivated
         else { return }
@@ -3361,11 +3056,7 @@ struct BeginnerGameplayView: View {
 
         let fret = max(currentRound, 0)
 
-        if lessonStyle == .random || lessonStyle == .sequential {
-            guard beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 8 else {
-                beginnerRuntime.autoPlayNextDate = nil
-                return
-            }
+        if lessonStyle == .sequential {
             guard beginnerRuntime.revealCount >= GameConstants.maxRevealCount else {
                 beginnerRuntime.autoPlayNextDate = nil
                 return
@@ -3572,8 +3263,7 @@ struct BeginnerGameplayView: View {
         balanceDollars += payout
 
         if layoutMode == .beginner {
-            // Even phases (2,4,6,8) are descending
-            if beginnerRuntime.currentPhaseNumber % 2 == 0 {
+            if lessonStyle == .chord {
                 let requiredCorrectAnswers = effectivePlayRepetitions
                 let completedAtCurrentFret = beginnerRuntime.correctAnswersAtCurrentFret
 
@@ -3611,9 +3301,7 @@ struct BeginnerGameplayView: View {
             return
         }
 
-        if usesRandomStringOrder {
-            roundStringIndex = Int.random(in: 0..<max(activeStringOrder.count, 1))
-        } else if roundStringIndex < activeStringOrder.count - 1 {
+        if roundStringIndex < activeStringOrder.count - 1 {
             roundStringIndex += 1
         } else {
             roundStringIndex = 0
@@ -3632,35 +3320,14 @@ struct BeginnerGameplayView: View {
                     return
                 }
             }
+            
+            // Reset repetitions for the new chord
+            beginnerRuntime.scaleRepetitionsRemaining = effectivePlayRepetitions
         }
     }
-    
-        
+
     private func prepareCurrentQuestion() {
-    if lessonStyle == .random {
-        // Random style: use note sequence from generator
-        let idx = randomNoteGenerator.sequenceProgressIndex
-        guard idx < randomNoteGenerator.currentNoteSequence.count,
-              let nextString = randomNoteGenerator.expectedString else { return }
-        let correctNote = randomNoteGenerator.currentNoteSequence[idx]
-        let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
-        let incorrectNote = randomIncorrectNote(excluding: correctNote, useFlats: useFlats)
-        let correctOnLeft = Bool.random()
-        if correctOnLeft {
-            leftChoiceNote = correctNote
-            rightChoiceNote = incorrectNote
-        } else {
-            leftChoiceNote = incorrectNote
-            rightChoiceNote = correctNote
-        }
-        currentPromptStrings = [nextString]
-        lastPromptedCorrectNote = correctNote
-        lastPromptedStringHalf = .left
-        lastPromptedStringNumber = nextString
-        withAnimation(.easeInOut(duration: 1.3)) {
-            currentFretStart = max(currentRound, 0)
-        }
-    } else if lessonStyle == .sequential {
+        if lessonStyle == .sequential {
         // Sequential style: use SequentialNoteGenerator
         let idx = sequentialNoteGenerator.sequenceProgressIndex
         guard idx < sequentialNoteGenerator.currentNoteSequence.count,
@@ -3792,9 +3459,9 @@ struct BeginnerGameplayView: View {
                 gameplayAudioEngine.speakStartupAlert("SYSTEM ONLINE", volume: stringVolume)
                 startupSpeechPhase = .pendingPhase
             }
-        case .phaseOne:
+        case .sequenceOne:
             if startupSpeechPhase == .pendingPhase {
-                gameplayAudioEngine.speakStartupAlert("PHASE ONE", volume: stringVolume)
+                gameplayAudioEngine.speakStartupAlert("READY", volume: stringVolume)
                 startupSpeechPhase = .pendingArmed
             }
         case .armed:
@@ -3838,45 +3505,8 @@ struct BeginnerGameplayView: View {
     }
 
     private func handleBeginnerRoundOneProgressionIfNeeded(selectedNote: String, selectedString: Int, buttonIndex: Int) {
-        // Random style: check against random note sequence
-        if lessonStyle == .random {
-            guard beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 8 else { return }
-            guard !randomNoteGenerator.currentNoteSequence.isEmpty else { return }
-            guard !randomNoteGenerator.isSequenceComplete() else { return }
-
-            // Validate: note must match AND must not reuse an already-played string for that note
-            guard randomNoteGenerator.isValidAnswer(note: selectedNote, string: selectedString) else { return }
-
-            // Correct answer - light up the button
-            beginnerPressedButtonIndex = buttonIndex
-            beginnerPressedButtonCorrect = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                beginnerPressedButtonIndex = nil
-                beginnerPressedButtonCorrect = false
-            }
-            randomNoteGenerator.advanceSequence()
-
-            if randomNoteGenerator.isSequenceComplete() {
-                if beginnerRuntime.scaleRepetitionsRemaining <= 1 {
-                    if beginnerRuntime.pendingRoundShiftBeatPosition == nil {
-                        beginnerRuntime.pendingRoundShiftBeatPosition = roundRevealElapsedBeats + 2.0
-                    }
-                } else {
-                    beginnerRuntime.scaleRepetitionsRemaining -= 1
-                    randomNoteGenerator.resetForNewFret()
-                    beginnerRuntime.randomRevealCount = 0
-                    beginnerRuntime.randomRevealStartBeatBucket = nil
-                    beginnerRuntime.answerBoxReady = false
-                    let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
-                    randomNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats)
-                }
-            }
-            return
-        }
-
         // Sequential style: check against sequential note sequence
         if lessonStyle == .sequential {
-            guard beginnerRuntime.currentPhaseNumber >= 1 && beginnerRuntime.currentPhaseNumber <= 8 else { return }
             guard !sequentialNoteGenerator.currentNoteSequence.isEmpty else { return }
             guard !sequentialNoteGenerator.isSequenceComplete() else { return }
 
@@ -3904,7 +3534,7 @@ struct BeginnerGameplayView: View {
                     beginnerRuntime.sequentialRevealStartBeatBucket = nil
                     beginnerRuntime.answerBoxReady = false
                     let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
-                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: playDirection == .ascending)
+                    sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: true)
                     prepareCurrentQuestion()
                 }
             }
@@ -4055,9 +3685,6 @@ struct BeginnerGameplayView: View {
             return
         }
 
-        if layoutMode == .beginner {
-            beginnerRuntime.coursePhase = .round1Ascending
-        }
         isCodeScreensaverMode = false
         startupSequenceActivated = false
         startupSequenceElapsed = 0
@@ -4069,29 +3696,6 @@ struct BeginnerGameplayView: View {
         roundRevealElapsedBeats = 0
         roundRevealLastTickDate = nil
 
-        // Ensure reveal beat-buckets are always fresh for the active style at START
-        if lessonStyle == .random {
-            beginnerRuntime.randomRevealCount = 0
-            beginnerRuntime.randomRevealStartBeatBucket = nil
-        } else if lessonStyle == .sequential {
-            beginnerRuntime.sequentialRevealCount = 0
-            beginnerRuntime.sequentialRevealStartBeatBucket = nil
-        }
-
-        // Trigger phase announcement for sequential mode only
-        if layoutMode == .beginner && lessonStyle == .sequential {
-            beginnerRuntime.phaseAnnouncementStartBeat = 0
-            beginnerRuntime.phaseAnnouncementPhase = 1
-            beginnerRuntime.sequentialRevealCount = 0
-            beginnerRuntime.sequentialRevealStartBeatBucket = nil
-        }
-        
-        // Reset reveal counts for random mode to ensure progressive reveal
-        if layoutMode == .beginner && lessonStyle == .random {
-            beginnerRuntime.randomRevealCount = 0
-            beginnerRuntime.randomRevealStartBeatBucket = nil
-        }
-
         startGameFromBeginning(animateNeckSlideFromStartup: animateNeckSlideFromStartup)
         updateDirectionLockState()
         if !animateNeckSlideFromStartup {
@@ -4100,32 +3704,6 @@ struct BeginnerGameplayView: View {
     }
 
     private func handleStartButtonPress() {
-        // Stage 1: Phase completed message showing → fast-path: skip wait, go straight to next phase armed state
-        if layoutMode == .beginner, beginnerRuntime.phaseCompletedMessagePending {
-            beginnerRuntime.pendingPhaseCompletedAutoAdvanceDate = nil
-            beginnerRuntime.phaseCompletedMessagePending = false
-            beginnerRuntime.phaseCompletedMessageStartBeat = nil
-            advanceToNextPhaseArmedState()
-            return
-        }
-
-        // Stage 2: Phase announcement done → enter armed/screensaver state for new phase
-        if layoutMode == .beginner, beginnerRuntime.phaseAnnouncementStartBeat != nil {
-            beginnerRuntime.phaseAnnouncementStartBeat = nil
-            beginnerRuntime.phaseAnnouncementPhase = 0
-            isRoundArmed = true
-            isCodeScreensaverMode = true
-            startupSequenceActivated = false
-            startupSequenceElapsed = 0
-            startupSpeechPhase = .idle
-            isRoundPaused = false
-            transportStoppedForResume = false
-            roundRevealElapsedBeats = 0
-            roundRevealLastTickDate = nil
-            prepareCurrentQuestion()
-            syncBackingTrackPlayback()
-            return
-        }
 
         if startupStartButtonAttentionActive,
            layoutMode == .beginner,
@@ -4188,9 +3766,6 @@ struct BeginnerGameplayView: View {
         guard canPressResetButton else { return }
 
         if layoutMode == .beginner {
-            beginnerRuntime.coursePhase = .round1Ascending
-            beginnerRuntime.currentPhaseNumber = 1
-            beginnerRuntime.currentRoundInPhase = 1
             beginnerRuntime.correctAnswersAtCurrentFret = 0
         }
         isCodeScreensaverMode = true
@@ -4231,7 +3806,6 @@ struct BeginnerGameplayView: View {
 
     private func beginBeginnerRoundOneCelebration() {
         guard layoutMode == .beginner else { return }
-        beginnerRuntime.coursePhase = .round1Celebration
         developerPromptText = ""
         activeAnswerFeedback = nil
         questionBoxAssistActive = false
@@ -4242,7 +3816,6 @@ struct BeginnerGameplayView: View {
 
     private func beginBeginnerRoundTwoCelebration() {
         guard layoutMode == .beginner else { return }
-        beginnerRuntime.coursePhase = .round2Celebration
         developerPromptText = ""
         activeAnswerFeedback = nil
         questionBoxAssistActive = false
@@ -4253,7 +3826,6 @@ struct BeginnerGameplayView: View {
 
     private func armBeginnerRoundTwo() {
         guard layoutMode == .beginner else { return }
-        beginnerRuntime.coursePhase = .round2Arming
         developerPromptText = ""
         activeAnswerFeedback = nil
         questionBoxAssistActive = false
@@ -4272,7 +3844,6 @@ struct BeginnerGameplayView: View {
 
     private func beginBeginnerRoundTwo() {
         guard layoutMode == .beginner else { return }
-        beginnerRuntime.coursePhase = .round2Descending
         isDescendingPhase = beginnerRoundTwoStartsDescending
         currentRound = beginnerRoundTwoStartingFret
         roundStringIndex = 0
@@ -4292,108 +3863,6 @@ struct BeginnerGameplayView: View {
         prepareCurrentQuestion()
     }
 
-    private func handlePhaseCompletion() {
-        guard layoutMode == .beginner else { return }
-
-        // Check if this is the final phase (phase 4)
-        if beginnerRuntime.currentPhaseNumber >= 4 {
-            // Show final celebration
-            beginBeginnerRoundOneCelebration()
-            return
-        }
-
-        // Stage 1: Show "Phase N Completed" message
-        // Do NOT increment phase number yet
-        // Do NOT reset fret position yet
-
-        // Set up phase completed message
-        beginnerRuntime.completedPhaseNumber = beginnerRuntime.currentPhaseNumber
-        beginnerRuntime.phaseCompletedMessagePending = true
-        beginnerRuntime.phaseCompletedMessageStartBeat = roundRevealElapsedBeats
-
-        // Schedule MIDI stop in 3 beats (wall-clock so it fires even while armed)
-        let secondsPer3Beats = 3.0 * 60.0 / Double(max(beatBPM, 60))
-        beginnerRuntime.pendingMidiStopDate = Date().addingTimeInterval(secondsPer3Beats)
-
-        // Auto-advance to armed/screensaver state after 4 beats (3 music + 1 message display)
-        let secondsPer4Beats = 4.0 * 60.0 / Double(max(beatBPM, 60))
-        beginnerRuntime.pendingPhaseCompletedAutoAdvanceDate = Date().addingTimeInterval(secondsPer4Beats)
-
-        // Clear answer state
-        beginnerRuntime.lastPickedNote = nil
-        beginnerRuntime.rewardNoteTextByString = nil
-        beginnerRuntime.answerBoxReady = false
-        activeAnswerFeedback = nil
-        questionBoxAssistActive = false
-        beginnerRuntime.autoPlayNextDate = nil
-
-        // Enter armed state - will wait for START button after completed message
-        isRoundArmed = true
-    }
-
-    private func advanceToNextPhaseArmedState() {
-        guard layoutMode == .beginner else { return }
-
-        // Increment phase number
-        let nextPhase = beginnerRuntime.currentPhaseNumber + 1
-        beginnerRuntime.currentPhaseNumber = nextPhase
-        beginnerRuntime.currentRoundInPhase = 1
-
-        // Set starting fret for the new phase
-        let nextPhaseIsDescending = [2, 4].contains(nextPhase)
-        currentRound = nextPhaseIsDescending ? 12 : 0
-
-        // Reset counters
-        roundStringIndex = 0
-        beginnerRuntime.correctAnswersAtCurrentFret = 0
-        beginnerRuntime.scaleRepetitionsRemaining = effectivePlayRepetitions
-
-        // Reset reveal state for the active style
-        if lessonStyle == .random {
-            randomNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats)
-            beginnerRuntime.randomRevealCount = 0
-            beginnerRuntime.randomRevealStartBeatBucket = nil
-        } else if lessonStyle == .sequential {
-            let lowToHigh = nextPhase <= 2
-            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: lowToHigh)
-            beginnerRuntime.sequentialRevealCount = 0
-            beginnerRuntime.sequentialRevealStartBeatBucket = nil
-        }
-
-        applyBeginnerBassTransposeForCurrentStage()
-        prepareCurrentQuestion()
-
-        // Enter screensaver with startup sequence already active (green armed state)
-        roundRevealElapsedBeats = 0
-        roundRevealLastTickDate = nil
-        isRoundArmed = true
-        isCodeScreensaverMode = true
-        startupSequenceActivated = true
-        startupSequenceStartDate = .now
-        startupSequenceElapsed = 0
-        startupSpeechPhase = .pendingArmed
-        questionBoxIntroProgress = 0
-        syncBackingTrackPlayback()
-    }
-
-    private func beginNextPhaseFromTransition() {
-        guard layoutMode == .beginner, beginnerRuntime.phaseTransitionPending else { return }
-
-        // Clear transition state
-        beginnerRuntime.phaseTransitionPending = false
-
-        // Reset gameplay state for new phase
-        beginnerRuntime.roundOneIntroActive = true
-        beginnerRuntime.roundOneSequenceStartDate = Date()
-        roundRevealElapsedBeats = 0
-        roundRevealLastTickDate = nil
-
-        // Prepare first question
-        prepareCurrentQuestion()
-    }
-
-    // MARK: - Private Helper Methods
-    
     private func midiNoteValue(forNote note: String) -> Int? {
         let noteToMIDI: [String: Int] = [
             "C": 60, "C#": 61, "Db": 61,

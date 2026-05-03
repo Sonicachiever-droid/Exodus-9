@@ -556,7 +556,7 @@ private struct DeveloperConsoleFrame: View {
     let height: CGFloat
     let isScreensaverMode: Bool
     let scaleRepetitionText: String
-    let currentRoundInPhase: Int
+    let currentRound: Int
     let bankText: String
     let repetitionCountColor: Color
     let startupElapsed: TimeInterval
@@ -631,7 +631,7 @@ private struct DeveloperConsoleFrame: View {
                                     .font(.system(size: 20, weight: .black, design: .monospaced))
                                     .foregroundStyle(repetitionCountColor)
                                 Spacer()
-                                Text("Round \(currentRoundInPhase)")
+                                Text("Round \(currentRound)")
                                     .font(.system(size: 20, weight: .black, design: .monospaced))
                                     .foregroundStyle(Color.white)
                                 Spacer()
@@ -881,7 +881,6 @@ private struct BrassStringSegment: View {
 struct MaestroGameplayView: View {
     let onMenuSelection: ((GameplayMenuOption) -> Void)?
     let selectedMode: RefretMode
-    let selectedPhase: Int
     let beatBPM: Int
     let beatVolume: Double
     let stringVolume: Double
@@ -900,21 +899,11 @@ struct MaestroGameplayView: View {
     private var maxFretOffset: Int { totalFrets }
     private var minFretOffset: Int { -totalFrets }
 
-    private var isPhaseDescending: Bool {
-        LessonDirection(rawValue: playDirectionRawValue) == .descending
-    }
-
-    private var usesRandomStringOrder: Bool {
-        [5, 6].contains(selectedPhase)
-    }
-
-    private var phaseLabel: String {
-        "PHASE \(selectedPhase)"
-    }
-
     private var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
 
-    private var maestroUsesFlats: Bool { isPhaseDescending }
+    private var maestroUsesFlats: Bool {
+        isDescending
+    }
 
     private var activeStringOrder: [Int] {
         let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
@@ -956,7 +945,7 @@ struct MaestroGameplayView: View {
     @State private var currentRound: Int = 0
     @State private var roundStringIndex: Int = 0
     @State private var repetitionsRemainingAtFret: Int = 1
-    @State private var isDescendingPhase: Bool = false
+    @State private var isDescending: Bool = false
     @State private var leftChoiceNote: String = ""
     @State private var rightChoiceNote: String = ""
     @State private var activePickedStringNumbers: [Int] = [1]
@@ -1021,7 +1010,6 @@ struct MaestroGameplayView: View {
     init(
         onMenuSelection: ((GameplayMenuOption) -> Void)? = nil,
         selectedMode: RefretMode = .freestyle,
-        selectedPhase: Int = 1,
         beatBPM: Int = 80,
         beatVolume: Double = 0.8,
         stringVolume: Double = 0.8,
@@ -1037,7 +1025,6 @@ struct MaestroGameplayView: View {
     ) {
         self.onMenuSelection = onMenuSelection
         self.selectedMode = selectedMode
-        self.selectedPhase = min(max(selectedPhase, 1), 12)
         self.beatBPM = beatBPM
         self.beatVolume = beatVolume
         self.stringVolume = stringVolume
@@ -1095,7 +1082,6 @@ struct MaestroGameplayView: View {
             let isGameplayStarted = !isCodeScreensaverMode
             let displayedFretStatusLabel = isGameplayStarted ? cachedFretStatusLabel : ""
             let displayedStringStatusLabel = isGameplayStarted ? cachedStringStatusLabel : ""
-            let roundStatusLabel = "ROUND \(currentRound + 1)"
             let screenBannerFont = UIFont.systemFont(ofSize: 20, weight: .semibold)
             let screenMeasuredWidth = max(
                 textWidth(for: cachedFretStatusLabel, font: screenBannerFont),
@@ -1353,7 +1339,7 @@ struct MaestroGameplayView: View {
                     height: topStatusOuterHeight,
                     isScreensaverMode: isCodeScreensaverMode,
                     scaleRepetitionText: "\(repetitionsRemainingAtFret)X",
-                    currentRoundInPhase: currentRound + 1,
+                    currentRound: currentRound + 1,
                     bankText: "$\(displayedBankDollars)",
                     repetitionCountColor: .white,
                     startupElapsed: startupSequenceElapsed,
@@ -1767,7 +1753,7 @@ struct MaestroGameplayView: View {
         currentRound = playStartingFret
         roundStringIndex = 0
         repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
-        isDescendingPhase = isPhaseDescending
+        isDescending = self.isDescending
         bankDollars = 0
         displayedBankDollars = 0
         walletDollars = 0
@@ -1992,9 +1978,7 @@ struct MaestroGameplayView: View {
         balanceDollars += payout
 
         // Advance to next string in round
-        if usesRandomStringOrder {
-            roundStringIndex = Int.random(in: 0..<max(activeStringOrder.count, 1))
-        } else if roundStringIndex < activeStringOrder.count - 1 {
+        if roundStringIndex < activeStringOrder.count - 1 {
             roundStringIndex += 1
         } else {
             // Pass through all strings complete — decrement repetition counter
@@ -2005,17 +1989,22 @@ struct MaestroGameplayView: View {
                 repetitionsRemainingAtFret -= 1
                 if repetitionsRemainingAtFret <= 0 {
                     repetitionsRemainingAtFret = max(playRepetitions, 1)
-                if !isPhaseDescending {
+                // Advance fret or reverse direction at boundary
+                if !isDescending {
                     if currentRound < 12 {
                         currentRound += 1
                     } else {
-                        currentRound = 0
+                        // At upper boundary - reverse direction
+                        isDescending = true
+                        currentRound = 11
                     }
                 } else {
                     if currentRound > 0 {
                         currentRound -= 1
                     } else {
-                        currentRound = 12
+                        // At lower boundary - reverse direction
+                        isDescending = false
+                        currentRound = 1
                     }
                 }
                 // Immediate bass transpose

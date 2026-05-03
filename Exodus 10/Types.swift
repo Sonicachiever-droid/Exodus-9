@@ -5,17 +5,6 @@ import SwiftUI
 enum LessonStyle: String, CaseIterable {
     case chord
     case sequential
-    case random
-}
-
-// MARK: - Game Phase (finite state machine — replaces 15+ bools)
-
-enum GamePhase: Equatable {
-    case screensaver
-    case phaseAnnouncement
-    case revealing
-    case playing
-    case phaseComplete
 }
 
 // MARK: - Game Constants (replaces all magic numbers)
@@ -25,11 +14,8 @@ enum GameConstants {
     static let revealGateBeats: Int = 7        // beats elapsed before autoplay unlocks
     static let roundShiftDelayBeats: Double = 2.0
     static let autoPlayInterval: TimeInterval = 0.38
-    static let phaseAnnouncementBeats: Double = 8.0
-    static let phaseCompletionAutoAdvanceBeats: Double = 4.0
+    static let directionReversalBeats: Double = 4.0
     static let minBPM: Int = 60
-    static let minPhase: Int = 1
-    static let maxPhase: Int = 4
     static let stringCount: Int = 6
     // Left column: strings top→bottom = 4, 5, 6
     static let leftColumnStrings: [Int] = [4, 5, 6]
@@ -81,14 +67,6 @@ enum AnswerSide {
 enum LayoutMode {
     case beginner
     case maestro
-}
-
-enum BeginnerCoursePhase {
-    case round1Ascending
-    case round1Celebration
-    case round2Arming
-    case round2Descending
-    case round2Celebration
 }
 
 enum BeginnerRoundZeroIntroDisplayPhase {

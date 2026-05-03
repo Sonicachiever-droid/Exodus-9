@@ -12,7 +12,6 @@ final class BeginnerGameState {
     var currentRoundInPhase: Int = 1
     var correctAnswersAtCurrentFret: Int = 0
     var scaleRepetitionsRemaining: Int = 1
-    var coursePhase: BeginnerCoursePhase = .round1Ascending
 
     // MARK: Unified Reveal System (one set of counters for all lesson styles)
     var revealCount: Int = 0
@@ -22,14 +21,6 @@ final class BeginnerGameState {
     var answerBoxReady: Bool = false
 
     // MARK: Reveal aliases (random & sequential share the unified counters)
-    var randomRevealCount: Int {
-        get { revealCount }
-        set { revealCount = newValue }
-    }
-    var randomRevealStartBeatBucket: Int? {
-        get { revealStartBeatBucket }
-        set { revealStartBeatBucket = newValue }
-    }
     var sequentialRevealCount: Int {
         get { revealCount }
         set { revealCount = newValue }
@@ -86,6 +77,10 @@ final class BeginnerGameState {
     var introStartBeatBucket: Int? = nil
     var showRoundZeroIntroSequence: Bool = false
 
+    // MARK: Direction Reversing
+    var directionReversingMessagePending: Bool = false
+    var directionReversingMessageStartBeat: Double? = nil
+
     // MARK: MIDI Stop
     var pendingMidiStopDate: Date? = nil
 
@@ -100,7 +95,6 @@ final class BeginnerGameState {
         currentRoundInPhase = 1
         correctAnswersAtCurrentFret = 0
         scaleRepetitionsRemaining = 1
-        coursePhase = .round1Ascending
         clearReveal()
         clearPhaseMessaging()
         clearAutoPlay()
