@@ -901,8 +901,7 @@ private struct DeveloperConsoleFrame: View {
                                                                     let isRevealed = idx < sequentialRevealCount
                                                                     let isAnswered = idx < sequentialAnsweredCount
                                                                     Text(slot.note)
-                                                                        .font(.system(size: 200, weight: .black, design: .monospaced))
-                                                                        .minimumScaleFactor(0.1)
+                                                                        .font(.system(size: 50, weight: .black, design: .monospaced))
                                                                         .foregroundStyle(idx == sequentialAnsweredCount ? Color.orange : Color.green.opacity(0.98))
                                                                         .position(x: xPos, y: slotGeo.size.height / 2)
                                                                         .opacity(isRevealed && !isAnswered ? 1 : 0)
@@ -942,8 +941,7 @@ private struct DeveloperConsoleFrame: View {
                                                                         let isRevealed = idx < chordRevealCount
                                                                         let isAnswered = idx < chordAnsweredCount
                                                                         Text(slot.note)
-                                                                            .font(.system(size: 200, weight: .black, design: .monospaced))
-                                                                            .minimumScaleFactor(0.1)
+                                                                            .font(.system(size: 50, weight: .black, design: .monospaced))
                                                                             .foregroundStyle(idx == chordAnsweredCount ? Color.orange : Color.green.opacity(0.98))
                                                                             .position(x: xPos, y: chordGeo.size.height / 2)
                                                                             .opacity(isRevealed && !isAnswered ? 1 : 0)
