@@ -898,8 +898,9 @@ private struct DeveloperConsoleFrame: View {
                                                                     let isRevealed = idx < sequentialRevealCount
                                                                     let isAnswered = idx < sequentialAnsweredCount
                                                                     Text(slot.note)
-                                                                        .font(.system(size: min(slotGeo.size.height * 1.2, 52), weight: .black, design: .monospaced))
-                                                                        .minimumScaleFactor(0.45)
+                                                                        .font(.system(size: 200, weight: .black, design: .monospaced))
+                                                                        .minimumScaleFactor(0.1)
+                                                                        .frame(maxWidth: slotGeo.size.width / 6, alignment: .center)
                                                                         .foregroundStyle(Color.green.opacity(0.98))
                                                                         .position(x: xPos, y: slotGeo.size.height / 2)
                                                                         .opacity(isRevealed && !isAnswered ? 1 : 0)
