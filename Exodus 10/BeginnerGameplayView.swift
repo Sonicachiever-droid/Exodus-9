@@ -903,16 +903,9 @@ private struct DeveloperConsoleFrame: View {
                                                                     Text(slot.note)
                                                                         .font(.system(size: 200, weight: .black, design: .monospaced))
                                                                         .minimumScaleFactor(0.1)
-                                                                        .foregroundStyle(Color.green.opacity(0.98))
+                                                                        .foregroundStyle(idx == sequentialAnsweredCount ? Color.orange : Color.green.opacity(0.98))
                                                                         .position(x: xPos, y: slotGeo.size.height / 2)
                                                                         .opacity(isRevealed && !isAnswered ? 1 : 0)
-                                                                        .overlay {
-                                                                            if idx == sequentialAnsweredCount && isRevealed && !isAnswered {
-                                                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                                    .fill(Color.yellow.opacity(0.3))
-                                                    .blur(radius: 8)
-                                            }
-                                        }
                                                                 }
                                                             }
                                                         }
@@ -951,16 +944,9 @@ private struct DeveloperConsoleFrame: View {
                                                                         Text(slot.note)
                                                                             .font(.system(size: 200, weight: .black, design: .monospaced))
                                                                             .minimumScaleFactor(0.1)
-                                                                            .foregroundStyle(Color.green.opacity(0.98))
+                                                                            .foregroundStyle(idx == chordAnsweredCount ? Color.orange : Color.green.opacity(0.98))
                                                                             .position(x: xPos, y: chordGeo.size.height / 2)
                                                                             .opacity(isRevealed && !isAnswered ? 1 : 0)
-                                                                            .overlay {
-                                                                                if idx == chordAnsweredCount && isRevealed && !isAnswered {
-                                                                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                                                                        .fill(Color.yellow.opacity(0.3))
-                                                                                        .blur(radius: 8)
-                                                                                }
-                                                                            }
                                                                     }
                                                                 }
                                                             }
