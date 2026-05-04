@@ -718,6 +718,9 @@ private struct DeveloperConsoleFrame: View {
     let sequentialSlots: [(note: String, stringNumber: Int)]?
     let sequentialRevealCount: Int
     let sequentialAnsweredCount: Int
+    let chordSlots: [(note: String, stringNumber: Int)]?
+    let chordRevealCount: Int
+    let chordAnsweredCount: Int
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
@@ -903,6 +906,13 @@ private struct DeveloperConsoleFrame: View {
                                                                         .foregroundStyle(Color.green.opacity(0.98))
                                                                         .position(x: xPos, y: slotGeo.size.height / 2)
                                                                         .opacity(isRevealed && !isAnswered ? 1 : 0)
+                                                                        .overlay {
+                                                                            if idx == sequentialAnsweredCount && isRevealed && !isAnswered {
+                                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                                    .fill(Color.yellow.opacity(0.3))
+                                                    .blur(radius: 8)
+                                            }
+                                        }
                                                                 }
                                                             }
                                                         }
@@ -920,7 +930,46 @@ private struct DeveloperConsoleFrame: View {
                                                         .allowsHitTesting(false)
                                                     }
                                                 } else {
-                                                    // Two-line: pentatonic title + notes
+                                                    // Chord spatial slots: title + string-aligned notes
+                                                    if let slots = chordSlots {
+                                                        VStack(spacing: 0) {
+                                                            Text(titleLine)
+                                                                .font(.system(size: 200, weight: .black, design: .monospaced))
+                                                                .foregroundStyle(Color.green.opacity(0.98))
+                                                                .minimumScaleFactor(0.1)
+                                                                .lineLimit(1)
+                                                                .multilineTextAlignment(.center)
+                                                                .frame(maxWidth: width * 2 / 3)
+                                                            GeometryReader { chordGeo in
+                                                                let centers = GuitarStringLayout.stringCenters(containerWidth: chordGeo.size.width, neckWidth: chordGeo.size.width)
+                                                                ZStack {
+                                                                    ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
+                                                                        let stringIndex = GuitarStringLayout.totalStrings - slot.stringNumber  // 6-low E→0, 1-high E→5
+                                                                        let xPos = stringIndex < centers.count ? centers[stringIndex] : chordGeo.size.width / 2
+                                                                        let isRevealed = idx < chordRevealCount
+                                                                        let isAnswered = idx < chordAnsweredCount
+                                                                        Text(slot.note)
+                                                                            .font(.system(size: 200, weight: .black, design: .monospaced))
+                                                                            .minimumScaleFactor(0.1)
+                                                                            .foregroundStyle(Color.green.opacity(0.98))
+                                                                            .position(x: xPos, y: chordGeo.size.height / 2)
+                                                                            .opacity(isRevealed && !isAnswered ? 1 : 0)
+                                                                            .overlay {
+                                                                                if idx == chordAnsweredCount && isRevealed && !isAnswered {
+                                                                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                                                                        .fill(Color.yellow.opacity(0.3))
+                                                                                        .blur(radius: 8)
+                                                                                }
+                                                                            }
+                                                                    }
+                                                                }
+                                                            }
+                                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                        }
+                                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                                                        .allowsHitTesting(false)
+                                                    } else {
+                                                    // Two-line: pentatonic title + notes (fallback)
                                                     VStack(spacing: 0) {
                                                         Text(titleLine)
                                                             .font(.system(size: 200, weight: .black, design: .monospaced))
@@ -939,6 +988,7 @@ private struct DeveloperConsoleFrame: View {
                                                     }
                                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                                                     .allowsHitTesting(false)
+                                                    }
                                                 }
                                             } else {
                                                 EmptyView()
@@ -1376,6 +1426,28 @@ struct BeginnerGameplayView: View {
         let notes = beginnerCurrentScaleNotes
         let count = min(max(beginnerRuntime.pentatonicRevealCount, 0), notes.count)
         return notes.prefix(count).joined(separator: " ")
+    }
+
+    private var chordNoteStringMap: [Int] {
+        let notes = beginnerCurrentScaleNotes
+        let fret = max(currentRound, 0)
+        var map: [Int] = []
+
+        for note in notes {
+            var foundString: Int?
+            // Search strings in low-to-high order (6,5,4,3,2,1)
+            for stringNumber in stride(from: 6, through: 1, by: -1) {
+                if noteName(forString: stringNumber, fret: fret, useFlats: beginnerUsesFlats) == note {
+                    foundString = stringNumber
+                    break
+                }
+            }
+            // If note not found on any string, skip it (shouldn't happen for valid scales)
+            if let stringNum = foundString {
+                map.append(stringNum)
+            }
+        }
+        return map
     }
 
 
@@ -1955,7 +2027,12 @@ struct BeginnerGameplayView: View {
                         ? zip(sequentialNoteGenerator.currentNoteSequence, sequentialNoteGenerator.noteStringMap).map { (note: $0, stringNumber: $1) }
                         : nil,
                     sequentialRevealCount: min(beginnerRuntime.sequentialRevealCount, sequentialNoteGenerator.currentNoteSequence.count),
-                    sequentialAnsweredCount: sequentialNoteGenerator.sequenceProgressIndex
+                    sequentialAnsweredCount: sequentialNoteGenerator.sequenceProgressIndex,
+                    chordSlots: (layoutMode == .beginner && lessonStyle == .chord && !beginnerCurrentScaleNotes.isEmpty)
+                        ? zip(beginnerCurrentScaleNotes, chordNoteStringMap).map { (note: $0, stringNumber: $1) }
+                        : nil,
+                    chordRevealCount: min(beginnerRuntime.pentatonicRevealCount, beginnerCurrentScaleNotes.count),
+                    chordAnsweredCount: beginnerRuntime.scaleSequenceIndex
                 )
                 .position(x: proxy.size.width / 2, y: topStatusCenterY)
                 .allowsHitTesting(false)
@@ -3596,7 +3673,8 @@ struct BeginnerGameplayView: View {
         }
 
         let expectedNote = currentScaleNotes[safeSequenceIndex]
-        if selectedNote == expectedNote {
+        let expectedString = chordNoteStringMap[safeSequenceIndex]
+        if selectedNote == expectedNote && selectedString == expectedString {
             // Correct answer - light up the button
             beginnerPressedButtonIndex = buttonIndex
             beginnerPressedButtonCorrect = true
