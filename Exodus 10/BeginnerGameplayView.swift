@@ -1432,17 +1432,19 @@ struct BeginnerGameplayView: View {
         let notes = beginnerCurrentScaleNotes
         let fret = max(currentRound, 0)
         var map: [Int] = []
+        var usedStrings: Set<Int> = []
 
         for note in notes {
             var foundString: Int?
-            // Search strings in low-to-high order (6,5,4,3,2,1)
+            // Search strings in low-to-high order (6,5,4,3,2,1), skipping already-used strings
             for stringNumber in stride(from: 6, through: 1, by: -1) {
-                if noteName(forString: stringNumber, fret: fret, useFlats: beginnerUsesFlats) == note {
+                if !usedStrings.contains(stringNumber) && noteName(forString: stringNumber, fret: fret, useFlats: beginnerUsesFlats) == note {
                     foundString = stringNumber
+                    usedStrings.insert(stringNumber)
                     break
                 }
             }
-            // If note not found on any string, skip it (shouldn't happen for valid scales)
+            // If note not found on any unused string, skip it (shouldn't happen for valid scales)
             if let stringNum = foundString {
                 map.append(stringNum)
             }
