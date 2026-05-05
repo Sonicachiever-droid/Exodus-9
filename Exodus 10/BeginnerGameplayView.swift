@@ -96,7 +96,7 @@ private struct WhiteNoteBoxOverlay: View {
                     .frame(width: boxWidth, height: clampedBoxHeight)
                     .overlay {
                         if isActive, let displayedNoteText, !displayedNoteText.isEmpty {
-                            Text(displayedNoteText)
+                            Text(displayedNoteText.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
                                 .font(.system(size: min(clampedBoxHeight * 0.78, 28), weight: .black, design: .monospaced))
                                 .minimumScaleFactor(0.32)
                                 .lineLimit(1)
@@ -900,10 +900,11 @@ private struct DeveloperConsoleFrame: View {
                                                                     let xPos = stringIndex < centers.count ? centers[stringIndex] : slotGeo.size.width / 2
                                                                     let isRevealed = idx < sequentialRevealCount
                                                                     let isAnswered = idx < sequentialAnsweredCount
-                                                                    Text(slot.note)
-                                                                        .font(.system(size: 50, weight: .black, design: .monospaced))
+                                                                    Text(slot.note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
+                                                                        .font(.system(size: 37, weight: .black, design: .default))
+                                                                        .minimumScaleFactor(0.1)
                                                                         .foregroundStyle(idx == sequentialAnsweredCount ? Color.orange : Color.green.opacity(0.98))
-                                                                        .position(x: xPos, y: slotGeo.size.height / 2)
+                                                                        .position(x: xPos, y: slotGeo.size.height * 0.86 - 15)
                                                                         .opacity(isRevealed && !isAnswered ? 1 : 0)
                                                                 }
                                                             }
@@ -912,7 +913,7 @@ private struct DeveloperConsoleFrame: View {
                                                         .allowsHitTesting(false)
                                                     } else {
                                                     Text(notesLine)
-                                                        .font(.system(size: 200, weight: .black, design: .monospaced))
+                                                        .font(.system(size: 50, weight: .black, design: .default))
                                                         .foregroundStyle(Color.green.opacity(0.98))
                                                         .minimumScaleFactor(0.1)
                                                         .lineLimit(1)
@@ -922,56 +923,45 @@ private struct DeveloperConsoleFrame: View {
                                                         .allowsHitTesting(false)
                                                     }
                                                 } else {
-                                                    // Chord spatial slots: title + string-aligned notes
+                                                    // Chord style: string-aligned slots (new) or two-line fallback
                                                     if let slots = chordSlots {
+                                                        GeometryReader { chordGeo in
+                                                            let centers = GuitarStringLayout.stringCenters(containerWidth: chordGeo.size.width, neckWidth: chordGeo.size.width)
+                                                            ZStack {
+                                                                ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
+                                                                    let stringIndex = GuitarStringLayout.totalStrings - slot.stringNumber
+                                                                    let xPos = stringIndex < centers.count ? centers[stringIndex] : chordGeo.size.width / 2
+                                                                    let isRevealed = idx < chordRevealCount
+                                                                    let isAnswered = idx < chordAnsweredCount
+                                                                    Text(slot.note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
+                                                                        .font(.system(size: 37, weight: .black, design: .default))
+                                                                        .foregroundStyle(idx == chordAnsweredCount ? Color.orange : Color.green.opacity(0.98))
+                                                                        .position(x: xPos, y: chordGeo.size.height * 0.86 - 15)
+                                                                        .opacity(isRevealed && !isAnswered ? 1 : 0)
+                                                                }
+                                                            }
+                                                        }
+                                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                    } else {
+                                                        // Two-line: pentatonic title + notes (fallback)
                                                         VStack(spacing: 0) {
                                                             Text(titleLine)
-                                                                .font(.system(size: 200, weight: .black, design: .monospaced))
+                                                                .font(.system(size: 50, weight: .black, design: .default))
                                                                 .foregroundStyle(Color.green.opacity(0.98))
                                                                 .minimumScaleFactor(0.1)
                                                                 .lineLimit(1)
                                                                 .multilineTextAlignment(.center)
                                                                 .frame(maxWidth: width * 2 / 3)
-                                                            GeometryReader { chordGeo in
-                                                                let centers = GuitarStringLayout.stringCenters(containerWidth: chordGeo.size.width, neckWidth: chordGeo.size.width)
-                                                                ZStack {
-                                                                    ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
-                                                                        let stringIndex = GuitarStringLayout.totalStrings - slot.stringNumber  // 6-low E→0, 1-high E→5
-                                                                        let xPos = stringIndex < centers.count ? centers[stringIndex] : chordGeo.size.width / 2
-                                                                        let isRevealed = idx < chordRevealCount
-                                                                        let isAnswered = idx < chordAnsweredCount
-                                                                        Text(slot.note)
-                                                                            .font(.system(size: 50, weight: .black, design: .monospaced))
-                                                                            .foregroundStyle(idx == chordAnsweredCount ? Color.orange : Color.green.opacity(0.98))
-                                                                            .position(x: xPos, y: chordGeo.size.height / 2)
-                                                                            .opacity(isRevealed && !isAnswered ? 1 : 0)
-                                                                    }
-                                                                }
-                                                            }
-                                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                            Text(notesLine)
+                                                                .font(.system(size: 50, weight: .black, design: .default))
+                                                                .foregroundStyle(Color.green.opacity(0.98))
+                                                                .minimumScaleFactor(0.1)
+                                                                .lineLimit(1)
+                                                                .multilineTextAlignment(.center)
+                                                                .frame(maxWidth: .infinity)
                                                         }
                                                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                                                         .allowsHitTesting(false)
-                                                    } else {
-                                                    // Two-line: pentatonic title + notes (fallback)
-                                                    VStack(spacing: 0) {
-                                                        Text(titleLine)
-                                                            .font(.system(size: 200, weight: .black, design: .monospaced))
-                                                            .foregroundStyle(Color.green.opacity(0.98))
-                                                            .minimumScaleFactor(0.1)
-                                                            .lineLimit(1)
-                                                            .multilineTextAlignment(.center)
-                                                            .frame(maxWidth: width * 2 / 3)
-                                                        Text(notesLine)
-                                                            .font(.system(size: 200, weight: .black, design: .monospaced))
-                                                            .foregroundStyle(Color.green.opacity(0.98))
-                                                            .minimumScaleFactor(0.1)
-                                                            .lineLimit(1)
-                                                            .multilineTextAlignment(.center)
-                                                            .frame(maxWidth: .infinity)
-                                                    }
-                                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                                    .allowsHitTesting(false)
                                                     }
                                                 }
                                             } else {
@@ -1165,7 +1155,11 @@ struct BeginnerGameplayView: View {
     private var activeStringOrder: [Int] {
         let baseOrder: [Int] = {
             let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
-            return (modeVariant == .freestyle && isProgressionLowToHigh) ? base.reversed() : base
+            // For Maestro: use playDirection; for Beginner: use isProgressionLowToHigh (only in freestyle)
+            let shouldReverse = layoutMode == .maestro
+                ? playDirection == .descending
+                : (modeVariant == .freestyle && isProgressionLowToHigh)
+            return shouldReverse ? base.reversed() : base
         }()
 
         switch modeVariant {
@@ -1278,6 +1272,7 @@ struct BeginnerGameplayView: View {
     @State private var lastPromptedStringNumber: Int? = nil
     @State private var recentPromptedCorrectNotes: [String] = []
     @State private var beginnerRuntime = BeginnerGameState()
+    @State private var resetButtonPressed: Bool = false
 
     private enum StartupSpeechPhase {
         case idle
@@ -1384,6 +1379,30 @@ struct BeginnerGameplayView: View {
         beginnerCurrentScaleStage.notes
     }
 
+    private var chordNoteStringMap: [Int] {
+        let notes = beginnerCurrentScaleNotes
+        let fret = max(currentRound, 0)
+        var map: [Int] = []
+        var usedStrings: Set<Int> = []
+
+        for note in notes {
+            var foundString: Int?
+            // Search strings in low-to-high order (6,5,4,3,2,1), skipping already-used strings
+            for stringNumber in stride(from: 6, through: 1, by: -1) {
+                if !usedStrings.contains(stringNumber) && noteName(forString: stringNumber, fret: fret, useFlats: beginnerUsesFlats) == note {
+                    foundString = stringNumber
+                    usedStrings.insert(stringNumber)
+                    break
+                }
+            }
+            // If note not found on any unused string, skip it (shouldn't happen for valid scales)
+            if let stringNum = foundString {
+                map.append(stringNum)
+            }
+        }
+        return map
+    }
+
     private var beginnerCurrentScaleTitle: String {
         beginnerCurrentScaleStage.title
     }
@@ -1410,30 +1429,6 @@ struct BeginnerGameplayView: View {
         let notes = beginnerCurrentScaleNotes
         let count = min(max(beginnerRuntime.pentatonicRevealCount, 0), notes.count)
         return notes.prefix(count).joined(separator: " ")
-    }
-
-    private var chordNoteStringMap: [Int] {
-        let notes = beginnerCurrentScaleNotes
-        let fret = max(currentRound, 0)
-        var map: [Int] = []
-        var usedStrings: Set<Int> = []
-
-        for note in notes {
-            var foundString: Int?
-            // Search strings in low-to-high order (6,5,4,3,2,1), skipping already-used strings
-            for stringNumber in stride(from: 6, through: 1, by: -1) {
-                if !usedStrings.contains(stringNumber) && noteName(forString: stringNumber, fret: fret, useFlats: beginnerUsesFlats) == note {
-                    foundString = stringNumber
-                    usedStrings.insert(stringNumber)
-                    break
-                }
-            }
-            // If note not found on any unused string, skip it (shouldn't happen for valid scales)
-            if let stringNum = foundString {
-                map.append(stringNum)
-            }
-        }
-        return map
     }
 
 
@@ -1960,7 +1955,7 @@ struct BeginnerGameplayView: View {
                                 )
                                 .frame(width: guideTileWidth, height: guideTileHeight)
                                 .overlay {
-                                    Text(note)
+                                    Text(note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
                                         .font(.system(size: guideBoxHeight * 0.48, weight: .black, design: .monospaced))
                                         .minimumScaleFactor(0.45)
                                         .lineLimit(1)
@@ -2071,13 +2066,15 @@ struct BeginnerGameplayView: View {
                     .accessibilityHidden(!showMaestroOverlays)
                     .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? initialGameplayDimOpacity * introScale : 0))
 
-                    MiniTVFrame(text: leftChoiceNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    let leftDisplayNote = leftChoiceNote.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭")
+                    MiniTVFrame(text: leftDisplayNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
                         .position(x: leftAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(!showMaestroOverlays)
                         .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? introScale : 0))
 
-                    MiniTVFrame(text: rightChoiceNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    let rightDisplayNote = rightChoiceNote.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭")
+                    MiniTVFrame(text: rightDisplayNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
                         .position(x: rightAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(!showMaestroOverlays)
@@ -2200,7 +2197,7 @@ struct BeginnerGameplayView: View {
                             let buttonNote = noteName(forString: leftStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
                             let buttonIndex = idx
                             MiniTVFrame(
-                                text: buttonNote,
+                                text: buttonNote.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"),
                                 width: beginnerScreenWidth,
                                 height: beginnerScreenHeight,
                                 fontScale: 1.0
@@ -2233,7 +2230,7 @@ struct BeginnerGameplayView: View {
                             let buttonNote = noteName(forString: rightStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
                             let buttonIndex = idx + 3
                             MiniTVFrame(
-                                text: buttonNote,
+                                text: buttonNote.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"),
                                 width: beginnerScreenWidth,
                                 height: beginnerScreenHeight,
                                 fontScale: 1.0
@@ -2318,13 +2315,19 @@ struct BeginnerGameplayView: View {
                                         .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                                 )
                         )
-                    Button("RESET") { handleRoundResetButton() }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .disabled(!canPressResetButton)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                        )
+                    Button("RESET") {
+                        resetButtonPressed = true
+                        handleRoundResetButton()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            resetButtonPressed = false
+                        }
+                    }
+                    .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
+                            .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                    )
                 }
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.black.opacity(0.92))
@@ -2788,6 +2791,8 @@ struct BeginnerGameplayView: View {
         let rewardDisplayFret = max(currentRound, 0)
 
         for (stringNumber, _) in rewardPairs {
+            // Skip low E string (6) from MIDI playback — only white box notes are sounded
+            if stringNumber == 6 { continue }
             let displayedNote = noteName(forString: stringNumber, fret: rewardDisplayFret, useFlats: beginnerUsesFlats)
             guard let midiNote = beginnerRewardMIDINote(for: displayedNote, stringNumber: stringNumber) else { continue }
             strings.append(stringNumber)
@@ -2928,6 +2933,7 @@ struct BeginnerGameplayView: View {
             } else {
                 // At upper boundary - reverse direction
                 isDescendingPhase = true
+                playDirectionRawValue = LessonDirection.descending.rawValue
                 currentRound = beginnerUpperFretBoundary - 1
             }
         } else {
@@ -2936,6 +2942,7 @@ struct BeginnerGameplayView: View {
             } else {
                 // At lower boundary - reverse direction
                 isDescendingPhase = false
+                playDirectionRawValue = LessonDirection.ascending.rawValue
                 currentRound = 1
             }
         }
@@ -2991,9 +2998,11 @@ struct BeginnerGameplayView: View {
                 // At boundary - reverse direction
                 if isDescendingPhase {
                     isDescendingPhase = false
+                    playDirectionRawValue = LessonDirection.ascending.rawValue
                     currentRound = 1
                 } else {
                     isDescendingPhase = true
+                    playDirectionRawValue = LessonDirection.descending.rawValue
                     currentRound = beginnerUpperFretBoundary - 1
                 }
             }
@@ -3148,8 +3157,6 @@ struct BeginnerGameplayView: View {
             return
         }
 
-        let fret = max(currentRound, 0)
-
         if lessonStyle == .sequential {
             guard beginnerRuntime.revealCount >= GameConstants.maxRevealCount else {
                 beginnerRuntime.autoPlayNextDate = nil
@@ -3202,13 +3209,8 @@ struct BeginnerGameplayView: View {
                 return
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
-            let preferredStringOrder = beginnerAutoPlayPreferredStringOrder(for: expectedNote)
-            let matchedString = preferredStringOrder.first {
-                noteName(forString: $0, fret: fret, useFlats: false) == expectedNote
-            } ?? preferredStringOrder.first {
-                noteName(forString: $0, fret: fret, useFlats: beginnerUsesFlats) == expectedNote
-            }
-            guard let selectedString = matchedString else {
+            let selectedString = chordNoteStringMap[safeSequenceIndex]
+            guard selectedString > 0 else {
                 beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
                 return
             }
@@ -3448,7 +3450,13 @@ struct BeginnerGameplayView: View {
     } else {
         // Chord style: existing behavior
         let fret = max(currentRound, 0)
-        let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
+        let useFlats: Bool = {
+            if layoutMode == .beginner {
+                return beginnerUsesFlats
+            } else {
+                return playDirection == .descending
+            }
+        }()
         let targetString = activeStringOrder.isEmpty ? 1 : activeStringOrder.randomElement() ?? 1
         let correctNote = noteName(forString: targetString, fret: fret, useFlats: useFlats)
         let incorrectNote = randomIncorrectNote(excluding: correctNote, useFlats: useFlats)

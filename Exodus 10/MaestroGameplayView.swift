@@ -4,6 +4,10 @@ import AVFoundation
 
 // GameplayMenuOption and RefretMode are defined in Types.swift
 
+fileprivate func displayMaestroNoteName(_ text: String) -> String {
+    text.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭")
+}
+
 private struct GoldHorizontalPipingLine: View {
     let width: CGFloat
 
@@ -733,10 +737,10 @@ private struct WhiteNoteBoxOverlay: View {
                                 .stroke(strokeColor, lineWidth: 2)
                         )
                     if isActive, let revealedNote {
-                        Text(revealedNote)
-                            .font(.system(size: clampedBoxHeight * 0.38, weight: .black, design: .default))
+                        Text(displayMaestroNoteName(revealedNote))
+                            .font(.system(size: min(clampedBoxHeight * 0.78, 28), weight: .black, design: .monospaced))
                             .foregroundColor(currentQuestionIsAccidental ? .white : .black)
-                            .minimumScaleFactor(0.5)
+                            .minimumScaleFactor(0.32)
                             .lineLimit(1)
                     }
                 }
@@ -899,15 +903,19 @@ struct MaestroGameplayView: View {
     private var maxFretOffset: Int { totalFrets }
     private var minFretOffset: Int { -totalFrets }
 
+    private var playDirection: LessonDirection {
+        LessonDirection(rawValue: playDirectionRawValue) ?? .ascending
+    }
+
     private var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
 
     private var maestroUsesFlats: Bool {
-        isDescending
+        playDirection == .descending
     }
 
     private var activeStringOrder: [Int] {
         let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
-        return isProgressionLowToHigh ? base.reversed() : base
+        return playDirection == .descending ? base.reversed() : base
     }
 
     private var modePayoutMultiplier: Double {
@@ -937,14 +945,14 @@ struct MaestroGameplayView: View {
     private let codenameNemoEnabled: Bool = false
     private let scaleLengthInches: Double = 25.5
     private let debugGridRows: Int = 8
-    private var maxWindowRow: Int { (debugGridRows - 1) * 2 } // half-step increments across rows
-    @State private var currentFretStart: Int = 0
-    @State private var currentWindowRow: Int = 2
-    @State private var leftThumbState: ThumbGlowState = .neutral
-    @State private var rightThumbState: ThumbGlowState = .neutral
+
     @State private var currentRound: Int = 0
     @State private var roundStringIndex: Int = 0
     @State private var repetitionsRemainingAtFret: Int = 1
+    @State private var currentWindowRow: Int = 2
+    @State private var leftThumbState: ThumbGlowState = .neutral
+    @State private var rightThumbState: ThumbGlowState = .neutral
+    @State private var currentFretStart: Int = 0
     @State private var isDescending: Bool = false
     @State private var leftChoiceNote: String = ""
     @State private var rightChoiceNote: String = ""
@@ -1296,7 +1304,6 @@ struct MaestroGameplayView: View {
                             let fillColor: Color = isAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                             let strokeColor: Color = isAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                             let textColor: Color = isAccidental ? Color.white.opacity(0.96) : Color.black
-                            let textSize = min(guideBoxHeight * 0.78, 28)
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .fill(fillColor)
                                 .overlay(
@@ -1304,10 +1311,10 @@ struct MaestroGameplayView: View {
                                         .stroke(strokeColor, lineWidth: 2)
                                 )
                                 .overlay(
-                                    Text(note)
-                                        .font(.system(size: textSize, weight: .black, design: .monospaced))
+                                    Text(displayMaestroNoteName(note))
+                                        .font(.system(size: guideBoxHeight * 0.48, weight: .black, design: .monospaced))
                                         .foregroundStyle(textColor)
-                                        .minimumScaleFactor(0.32)
+                                        .minimumScaleFactor(0.45)
                                         .lineLimit(1)
                                 )
                                 .frame(width: boxWidth, height: guideBoxHeight)
@@ -1390,12 +1397,12 @@ struct MaestroGameplayView: View {
                         .animation(.easeOut(duration: 0.08), value: beatLightFlashOn)
                         .allowsHitTesting(false)
 
-                    MiniTVFrame(text: leftChoiceNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, isDarkScreen: leftChoiceNote.contains("#") || leftChoiceNote.contains("b"))
+                    MiniTVFrame(text: displayMaestroNoteName(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, isDarkScreen: leftChoiceNote.contains("#") || leftChoiceNote.contains("b"))
                         .position(x: leftAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .opacity(codenameNemoEnabled ? 0 : introScale)
 
-                    MiniTVFrame(text: rightChoiceNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, isDarkScreen: rightChoiceNote.contains("#") || rightChoiceNote.contains("b"))
+                    MiniTVFrame(text: displayMaestroNoteName(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, isDarkScreen: rightChoiceNote.contains("#") || rightChoiceNote.contains("b"))
                         .position(x: rightAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .opacity(codenameNemoEnabled ? 0 : introScale)
@@ -1753,7 +1760,7 @@ struct MaestroGameplayView: View {
         currentRound = playStartingFret
         roundStringIndex = 0
         repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
-        isDescending = self.isDescending
+        isDescending = playDirection == .descending
         bankDollars = 0
         displayedBankDollars = 0
         walletDollars = 0
@@ -1996,6 +2003,7 @@ struct MaestroGameplayView: View {
                     } else {
                         // At upper boundary - reverse direction
                         isDescending = true
+                        playDirectionRawValue = LessonDirection.descending.rawValue
                         currentRound = 11
                     }
                 } else {
@@ -2004,6 +2012,7 @@ struct MaestroGameplayView: View {
                     } else {
                         // At lower boundary - reverse direction
                         isDescending = false
+                        playDirectionRawValue = LessonDirection.ascending.rawValue
                         currentRound = 1
                     }
                 }
