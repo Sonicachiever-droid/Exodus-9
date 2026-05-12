@@ -1071,7 +1071,7 @@ struct MaestroGameplayView: View {
             let upperWhitePipingY = buttonTopY - whitePipingGap
             let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * 0.18)
             let whitePipingWidth = max(proxy.size.width - 7, 0)
-            let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 2
+            let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 14
             let developerOverlaysEnabled: Bool = false
             let windowTopY = holeCenterY - highlightHeight / 2
             let topStatusOuterWidth = highlightWidth
