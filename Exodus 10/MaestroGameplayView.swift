@@ -8,43 +8,13 @@ fileprivate func displayMaestroNoteName(_ text: String) -> String {
     text.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭")
 }
 
-private struct GoldHorizontalPipingLine: View {
+private struct WhiteHorizontalPipingLine: View {
     let width: CGFloat
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 1.3, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.98, green: 0.9, blue: 0.66),
-                            Color(red: 0.90, green: 0.74, blue: 0.40),
-                            Color(red: 0.73, green: 0.55, blue: 0.26),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(width: width, height: 2.8)
-
-            VStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: 0.25, style: .continuous)
-                    .fill(Color.black.opacity(0.72))
-                    .frame(width: width, height: 0.45)
-
-                Spacer(minLength: 0)
-
-                RoundedRectangle(cornerRadius: 0.25, style: .continuous)
-                    .fill(Color.black.opacity(0.72))
-                    .frame(width: width, height: 0.45)
-            }
+        RoundedRectangle(cornerRadius: 1.3, style: .continuous)
+            .fill(Color.white)
             .frame(width: width, height: 2.8)
-
-            RoundedRectangle(cornerRadius: 0.4, style: .continuous)
-                .fill(Color.black.opacity(0.58))
-                .frame(width: max(width - 2, 0), height: 0.7)
-        }
     }
 
 }
@@ -176,10 +146,11 @@ private struct GameplayControlPlateShell: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.98, green: 0.9, blue: 0.66),
-                            Color(red: 0.9, green: 0.74, blue: 0.4),
-                            Color(red: 0.73, green: 0.55, blue: 0.26),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                            Color(red: 1.0, green: 1.0, blue: 1.0),
+                            Color(red: 0.95, green: 0.95, blue: 0.95),
+                            Color(red: 0.55, green: 0.55, blue: 0.55),
+                            Color(red: 0.25, green: 0.25, blue: 0.25),
+                            Color(red: 0.65, green: 0.65, blue: 0.65)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -211,9 +182,10 @@ private struct GameplayControlPlateShell: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.90, green: 0.76, blue: 0.44),
-                                Color(red: 0.72, green: 0.54, blue: 0.26),
-                                Color(red: 0.87, green: 0.72, blue: 0.40)
+                                Color(red: 1.0, green: 1.0, blue: 1.0),
+                                Color(red: 0.90, green: 0.90, blue: 0.90),
+                                Color(red: 0.45, green: 0.45, blue: 0.45),
+                                Color(red: 0.60, green: 0.60, blue: 0.60)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -275,10 +247,10 @@ private struct FullScreenElephantBackground: View {
         GeometryReader { geo in
             let bleed: CGFloat = 48
 
-            Image("MARSHALL ELEPHANT")
-                .resizable(resizingMode: .tile)
+            Image("tweed set two")
+                .resizable()
                 .frame(width: geo.size.width + bleed * 2, height: geo.size.height + bleed * 2)
-                .scaleEffect(x: 1.15, y: 1.15, anchor: .center)
+                .scaleEffect(x: 1.15, y: -1.15, anchor: .center)
                 .brightness(0.08)
                 .saturation(1.05)
                 .overlay(Color.black.opacity(0.18))
@@ -328,10 +300,10 @@ private struct MarshallElephantOverlay: View {
     var body: some View {
         let bleed: CGFloat = 36
 
-        Image("MARSHALL ELEPHANT")
-            .resizable(resizingMode: .tile)
+        Image("tweed set two")
+            .resizable()
             .frame(width: canvasSize.width + (bleed * 2), height: canvasSize.height + (bleed * 2))
-            .scaleEffect(x: 1.15, y: 1.15, anchor: .center)
+            .scaleEffect(x: 1.15, y: -1.15, anchor: .center)
             .brightness(0.12)
             .saturation(1.05)
             .overlay(Color.black.opacity(0.2))
@@ -355,7 +327,7 @@ private struct MarshallElephantOverlay: View {
     }
 }
 
-// NEW: This view locks the hole in the elephant tolex and the gold border together forever
+// NEW: This view locks the hole in the elephant tolex and the chrome border together forever
 private struct GreenBisectorLine: View {
     var body: some View {
         Rectangle()
@@ -382,8 +354,8 @@ private struct ElephantWindowView: View {
                 highlightCornerRadius: highlightCornerRadius
             )
             
-            // Gold border drawn in the exact same position as the hole
-            HighlightWindowGoldBorder(
+            // Chrome border drawn in the exact same position as the hole
+            HighlightWindowWhiteBorder(
                 width: highlightWidth,
                 height: highlightHeight,
                 cornerRadius: highlightCornerRadius
@@ -393,7 +365,7 @@ private struct ElephantWindowView: View {
     }
 }
 
-private struct HighlightWindowGoldBorder: View {
+private struct HighlightWindowWhiteBorder: View {
     let width: CGFloat
     let height: CGFloat
     let cornerRadius: CGFloat
@@ -403,9 +375,9 @@ private struct HighlightWindowGoldBorder: View {
             .strokeBorder(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.95, green: 0.82, blue: 0.47),
-                        Color(red: 0.78, green: 0.6, blue: 0.22),
-                        Color(red: 0.97, green: 0.85, blue: 0.5)
+                        Color(red: 1.0, green: 1.0, blue: 1.0),
+                        Color(red: 0.65, green: 0.65, blue: 0.65),
+                        Color(red: 0.90, green: 0.90, blue: 0.90)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -416,25 +388,14 @@ private struct HighlightWindowGoldBorder: View {
     }
 }
 
-private struct GoldPipingBorder: View {
+private struct WhitePipingBorder: View {
     let bottomInset: CGFloat
 
     var body: some View {
         ZStack {
             ContainerRelativeShape()
                 .inset(by: 1.75)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.82, blue: 0.47),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.97, green: 0.85, blue: 0.5)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 3.5
-                )
+                .stroke(Color.white, lineWidth: 3.5)
                 .shadow(color: Color.black.opacity(0.45), radius: 12, x: 0, y: 8)
 
             ContainerRelativeShape()
@@ -587,18 +548,7 @@ private struct DeveloperConsoleFrame: View {
                 .padding(3)
 
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.82, blue: 0.47),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.97, green: 0.85, blue: 0.5)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 2.5
-                )
+                .stroke(Color.white, lineWidth: 2.5)
                 .padding(1.5)
 
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -1207,6 +1157,13 @@ struct MaestroGameplayView: View {
                 FullScreenElephantBackground()
                     .ignoresSafeArea()
 
+                // Black background behind neck fretboard area
+                RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
+                    .fill(Color.black)
+                    .frame(width: highlightWidth, height: highlightHeight)
+                    .position(x: proxy.size.width / 2, y: orangeGreenUnitCenterY)
+                    .allowsHitTesting(false)
+
                 HStack {
                     Spacer()
                     ZStack {
@@ -1259,7 +1216,7 @@ struct MaestroGameplayView: View {
 
                 if isCodeScreensaverMode {
                     ZStack {
-                        Image("REFRETLOGOSET")
+                        Image("Refret tweed logo")
                             .resizable()
                             .scaledToFill()
                             .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
@@ -1267,7 +1224,7 @@ struct MaestroGameplayView: View {
                             .clipped()
                             .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
 
-                        HighlightWindowGoldBorder(
+                        HighlightWindowWhiteBorder(
                             width: highlightWidth,
                             height: highlightHeight,
                             cornerRadius: highlightCornerRadius
@@ -1424,17 +1381,17 @@ struct MaestroGameplayView: View {
                     .opacity(codenameNemoEnabled ? 0 : initialGameplayDimOpacity)
                 }
 
-                GoldHorizontalPipingLine(width: whitePipingWidth)
+                WhiteHorizontalPipingLine(width: whitePipingWidth)
                     .position(x: proxy.size.width / 2, y: upperWhitePipingY)
                     .allowsHitTesting(false)
                     .opacity(codenameNemoEnabled ? 0 : 1)
 
-                GoldHorizontalPipingLine(width: whitePipingWidth)
+                WhiteHorizontalPipingLine(width: whitePipingWidth)
                     .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
                     .allowsHitTesting(false)
                     .opacity(codenameNemoEnabled ? 0 : 1)
 
-                GoldPipingBorder(bottomInset: 0)
+                WhitePipingBorder(bottomInset: 0)
                     .allowsHitTesting(false)
                     .offset(y: -globalContentShiftY)
                     .zIndex(100)
@@ -1489,9 +1446,10 @@ struct MaestroGameplayView: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 0.94, green: 0.82, blue: 0.53),
-                                    Color(red: 0.78, green: 0.6, blue: 0.22),
-                                    Color(red: 0.94, green: 0.82, blue: 0.53)
+                                    Color(red: 1.0, green: 1.0, blue: 1.0),
+                                    Color(red: 0.85, green: 0.85, blue: 0.85),
+                                    Color(red: 0.55, green: 0.55, blue: 0.55),
+                                    Color(red: 0.75, green: 0.75, blue: 0.75)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -2549,7 +2507,7 @@ private struct RosewoodSegmentedBackground: View {
             let neckWidth = geometry.size.width
             let segments = segmentBounds(from: fretRatios)
             let bindingInset = max(neckWidth * 0.02, 6)
-            let rosewoodTexture = Image("RosewoodOne")
+            let rosewoodTexture = Image("Maple set")
 
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {

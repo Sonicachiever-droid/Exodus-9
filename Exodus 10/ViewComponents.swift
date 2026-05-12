@@ -189,9 +189,9 @@ struct ThumbButtonView: View {
             return [
                 .init(color: Color(white: 1.0, opacity: 1.0), location: 0.0),
                 .init(color: Color(white: 1.0, opacity: 1.0), location: 0.12),
-                .init(color: Color(red: 1.0, green: 0.96, blue: 0.70), location: 0.34),
-                .init(color: Color(red: 1.0, green: 0.78, blue: 0.12), location: 0.54),
-                .init(color: Color(red: 0.28, green: 0.12, blue: 0.00), location: 1.0)
+                .init(color: Color(red: 0.95, green: 0.95, blue: 0.95), location: 0.34),
+                .init(color: Color(red: 0.60, green: 0.60, blue: 0.60), location: 0.54),
+                .init(color: Color(red: 0.25, green: 0.25, blue: 0.25), location: 1.0)
             ]
         case .orange:
             return [
@@ -234,10 +234,11 @@ struct ThumbButtonView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.98, green: 0.9, blue: 0.66),
-                                Color(red: 0.90, green: 0.74, blue: 0.40),
-                                Color(red: 0.73, green: 0.55, blue: 0.26),
-                                Color(red: 0.94, green: 0.82, blue: 0.53)
+                                Color(red: 1.0, green: 1.0, blue: 1.0),
+                                Color(red: 0.95, green: 0.95, blue: 0.95),
+                                Color(red: 0.55, green: 0.55, blue: 0.55),
+                                Color(red: 0.25, green: 0.25, blue: 0.25),
+                                Color(red: 0.65, green: 0.65, blue: 0.65)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -292,9 +293,9 @@ struct ThumbButtonView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                Color(red: 0.98, green: 0.9, blue: 0.66),
-                                Color(red: 0.90, green: 0.74, blue: 0.40),
-                                Color(red: 0.73, green: 0.55, blue: 0.26)
+                                Color(red: 1.0, green: 1.0, blue: 1.0),
+                                Color(red: 0.75, green: 0.75, blue: 0.75),
+                                Color(red: 0.30, green: 0.30, blue: 0.30)
                             ],
                             center: UnitPoint(x: 0.35, y: 0.3),
                             startRadius: plunger * 0.03,
@@ -350,11 +351,12 @@ struct ThumbButtonView: View {
 
     private var ringMetalStops: [Color] {
         [
-            Color(red: 0.98, green: 0.9, blue: 0.66),
-            Color(red: 0.90, green: 0.74, blue: 0.40),
-            Color(red: 0.73, green: 0.55, blue: 0.26),
-            Color(red: 0.94, green: 0.82, blue: 0.53),
-            Color(red: 0.98, green: 0.9, blue: 0.66)
+            Color(red: 1.0, green: 1.0, blue: 1.0),
+            Color(red: 0.95, green: 0.95, blue: 0.95),
+            Color(red: 0.55, green: 0.55, blue: 0.55),
+            Color(red: 0.20, green: 0.20, blue: 0.20),
+            Color(red: 0.65, green: 0.65, blue: 0.65),
+            Color(red: 1.0, green: 1.0, blue: 1.0)
         ]
     }
 }
