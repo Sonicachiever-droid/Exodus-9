@@ -397,7 +397,10 @@ private struct Exodus10MenuSheet: View {
                             }
                             MenuSection(title: "HELP", gold: gold) {
                                 Button(action: {
-                                    layoutMode = nil
+                                    dismiss()
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        layoutMode = nil
+                                    }
                                 }) {
                                     HStack {
                                         Text("Learn to Play")
