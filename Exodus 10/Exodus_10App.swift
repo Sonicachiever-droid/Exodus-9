@@ -525,7 +525,7 @@ private struct Exodus10MenuSheet: View {
                             MenuSection(title: "TOOLBAR BUTTONS", gold: gold) {
                                 MenuTextRow("FRETBOARD — Shows all note names at the current fret position for reference.")
                                 MenuTextRow("AUTO — Plays correct answers automatically. Use to listen and learn. Tap again to stop.")
-                                MenuTextRow("REV — Reverses the play direction between ascending and descending frets mid-round.")
+                                MenuTextRow("RESET — Returns to round 0 (open strings) while preserving current settings.")
                             }
                             MenuSection(title: "SCORING", gold: gold) {
                                 MenuTextRow("Each correct answer earns $1 (Beginner) or $2 (Maestro). Wrong answers score nothing. Balance carries forward between sessions.")
