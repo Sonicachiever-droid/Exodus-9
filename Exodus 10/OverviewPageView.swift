@@ -72,9 +72,6 @@ struct OverviewPageView: View {
                     }
 
                     // Footer
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 8)
-                        .padding(.bottom, 40)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 20)

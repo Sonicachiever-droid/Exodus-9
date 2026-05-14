@@ -297,8 +297,6 @@ struct BeginnerGameplayView: View {
             let buttonPairSpacing: CGFloat = 28
             let windowBottomY = holeCenterY + highlightHeight / 2
             let topScreenY = windowBottomY + screenBannerHeight * 0.72
-            let _ = (proxy.size.width / 2) - (screenBannerWidth / 2) - (screenPairSpacing / 2)
-            let _ = (proxy.size.width / 2) + (screenBannerWidth / 2) + (screenPairSpacing / 2)
             let halfButtonCenterGap = (thumbDiameter + buttonPairSpacing) / 2
             let leftButtonCenterX = (proxy.size.width / 2) - halfButtonCenterGap
             let rightButtonCenterX = (proxy.size.width / 2) + halfButtonCenterGap
