@@ -58,7 +58,7 @@ struct OverviewPageView: View {
 
                     // Section: Scoring
                     OverviewSection(title: "SCORING") {
-                        Text("Correct answers earn dollars. Beginner earns $1 per correct note. Maestro earns $2. Wrong answers do not cost you — the fret simply restarts. Your wallet accumulates across the session.")
+                        Text("Correct answers earn dollars. Beginner earns $1 per correct note. Maestro earns $2. Wrong answers do not cost you — the fret simply restarts. Your wallet accumulates across the session. Maintain a streak of correct answers to win multipliers and earn even more points.")
                     }
 
                     // Section: Rounds & Frets
@@ -68,7 +68,7 @@ struct OverviewPageView: View {
 
                     // Section: Settings
                     OverviewSection(title: "SETTINGS") {
-                        Text("Open MENU during play to access four tabs: HOME (wallet, orientation), PLAY (starting fret, repetitions, direction, progression, high frets), GUIDE (quick reference), and AUDIO (guitar tone, tempo).")
+                        Text("Open MENU during play to access four tabs: HOME (wallet, balance, purchasable upgrades like High Frets and Landscape Mode, console skins), PLAY (starting fret, repetitions, direction, progression, high frets), GUIDE (quick reference), and AUDIO (guitar tone, tempo).")
                     }
 
                     // Footer
@@ -100,6 +100,7 @@ struct OverviewPageView: View {
                                     .stroke(Color(red: 0.95, green: 0.82, blue: 0.47).opacity(0.5), lineWidth: 1)
                             )
                     }
+                    .buttonStyle(.plain)
                     .padding(.trailing, 20)
                     .padding(.top, 16)
                 }
