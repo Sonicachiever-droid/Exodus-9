@@ -395,6 +395,24 @@ private struct Exodus10MenuSheet: View {
                                 .accessibilityHint(A11y.Settings.skinTweedHint(purchased: tweedPurchased, canAfford: balancePoints >= 500, isActive: consoleSkin == .tweed))
                                 .accessibilityAddTraits(consoleSkin == .tweed ? [.isSelected] : [])
                             }
+                            MenuSection(title: "HELP", gold: gold) {
+                                Button(action: {
+                                    layoutMode = nil
+                                }) {
+                                    HStack {
+                                        Text("Learn to Play")
+                                            .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                            .foregroundColor(.white.opacity(0.7))
+                                        Spacer()
+                                        Image(systemName: "book.fill")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundColor(gold)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Learn to play guide")
+                                .accessibilityHint("Return to the welcome screen to learn how to play")
+                            }
 
                         case .learn:
                             MenuSection(title: "LESSON SETUP", gold: gold) {
