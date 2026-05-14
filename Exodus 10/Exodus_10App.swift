@@ -403,7 +403,7 @@ private struct Exodus10MenuSheet: View {
                                     }
                                 }) {
                                     HStack {
-                                        Text("Learn to Play")
+                                        Text("Learn the Game")
                                             .font(.system(size: 16, weight: .medium, design: .monospaced))
                                             .foregroundColor(.white.opacity(0.7))
                                         Spacer()
@@ -413,7 +413,7 @@ private struct Exodus10MenuSheet: View {
                                     }
                                 }
                                 .buttonStyle(.plain)
-                                .accessibilityLabel("Learn to play guide")
+                                .accessibilityLabel("Learn the game guide")
                                 .accessibilityHint("Return to the welcome screen to learn how to play")
                             }
 
