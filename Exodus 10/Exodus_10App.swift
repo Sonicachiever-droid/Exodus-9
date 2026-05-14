@@ -51,7 +51,9 @@ struct Exodus_10App: App {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
+            #if DEBUG
             print("[Exodus 10] Audio session configuration failed: \(error)")
+            #endif
         }
         #endif
 
@@ -179,7 +181,9 @@ struct Exodus_10App: App {
                         geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
                     }
                     windowScene.requestGeometryUpdate(geometryPreferences) { error in
+                        #if DEBUG
                         print("[Exodus 10] Orientation change error: \(error)")
+                        #endif
                     }
                 }
                 #endif
