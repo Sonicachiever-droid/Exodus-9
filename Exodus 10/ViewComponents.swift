@@ -447,6 +447,7 @@ struct GoldPickerRow<T: Hashable>: View {
                                     .strokeBorder(isSelected ? gold : gold.opacity(disabled ? 0.2 : 0.45), lineWidth: 1.5)
                             )
                     }
+                    .buttonStyle(.plain)
                     .disabled(disabled)
                     .accessibilityLabel(option.label)
                     .accessibilityHint(isSelected ? "Currently selected" : "Select \(option.label)")
