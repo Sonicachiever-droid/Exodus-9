@@ -18,13 +18,13 @@ struct OverviewPageView: View {
 
                     // Header
                     VStack(alignment: .center, spacing: 6) {
-                        Text("REFRET")
+                        Text("ReFret")
                             .font(.system(size: 68, weight: .black, design: .monospaced))
                             .foregroundColor(Color(red: 0.95, green: 0.82, blue: 0.47))
                             .tracking(4)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 8)
+                    .padding(.top, 15)
 
                     Divider()
                         .background(Color(red: 0.95, green: 0.82, blue: 0.47).opacity(0.5))
@@ -72,9 +72,6 @@ struct OverviewPageView: View {
                     }
 
                     // Footer
-                    Text("[PLACEHOLDER — tagline / brand statement]")
-                        .font(.system(size: 12, weight: .regular, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.35))
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top, 8)
                         .padding(.bottom, 40)

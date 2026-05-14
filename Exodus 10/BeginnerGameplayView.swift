@@ -292,7 +292,7 @@ struct BeginnerGameplayView: View {
             let thumbDiameter = min(proxy.size.width, proxy.size.height) * 0.336
             let virtualRows: CGFloat = 40
             let vRowH: CGFloat = proxy.size.height / virtualRows
-            let buttonCenterY: CGFloat = (28 - 0.5) * vRowH
+            let buttonCenterY: CGFloat = (26 - 2.0) * vRowH
             let screenPairSpacing: CGFloat = 16
             let buttonPairSpacing: CGFloat = 28
             let windowBottomY = holeCenterY + highlightHeight / 2
@@ -309,10 +309,8 @@ struct BeginnerGameplayView: View {
             let whitePipingGap = max(gridRowHeight * 0.32, 14)
             let upperWhitePipingY = buttonTopY - whitePipingGap
             let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * GuitarConstants.gridRowHeightRatio)
-            let transportCenterY = min(
-                windowBottomY + max(gridRowHeight * 1.15, 24),
-                upperWhitePipingY - max(gridRowHeight * 0.95, 20)
-            )
+            let transportHeight: CGFloat = UIConstants.controlPlateButtonHeight
+            let transportCenterY = buttonBottomY + (proxy.size.height - buttonBottomY) / 2 + 43
             let whitePipingWidth = max(proxy.size.width - 7, 0)
             let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 2
             let windowTopY = holeCenterY - highlightHeight / 2

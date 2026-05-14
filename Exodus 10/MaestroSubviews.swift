@@ -89,7 +89,7 @@ extension MaestroGameplayView {
         lowerWhitePipingY: CGFloat,
         startButtonBlinkOn: Bool
     ) -> some View {
-        let maestroTransportCenterY: CGFloat = lowerWhitePipingY + (proxyHeight - lowerWhitePipingY) * 0.28
+        let maestroTransportCenterY: CGFloat = lowerWhitePipingY + (proxyHeight - lowerWhitePipingY) * 0.28 + 17
         HStack(spacing: 6) {
             Button("START") { handleMaestroStartButton() }
                 .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
