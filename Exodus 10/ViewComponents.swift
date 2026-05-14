@@ -21,9 +21,37 @@ struct StringLineOverlay: View {
 
             ZStack {
                 ForEach(0..<GuitarStringLayout.totalStrings, id: \.self) { index in
+                    let isBass = index < 3  // indices 0-2 = strings 6/5/4 (E A D)
+                    let stringWidth = isBass ? 2.8 - CGFloat(index) * 0.35 : 1.4
+                    let centerX = grooveCenters[index]
+                    let midY = clippedTopY + clippedHeight / 2
+
+                    // Brass edge lines — one hair-thin black line on each side
+                    if isBass {
+                        Rectangle()
+                            .fill(Color.black.opacity(0.55))
+                            .frame(width: 0.5, height: clippedHeight)
+                            .position(x: centerX - stringWidth / 2 - 0.25, y: midY)
+                        Rectangle()
+                            .fill(Color.black.opacity(0.55))
+                            .frame(width: 0.5, height: clippedHeight)
+                            .position(x: centerX + stringWidth / 2 + 0.25, y: midY)
+                    }
+
                     Rectangle()
                         .fill(
-                            LinearGradient(
+                            isBass
+                            ? LinearGradient(
+                                colors: [
+                                    .brassStringLight,
+                                    .brassStringMid,
+                                    .brassStringDark,
+                                    .brassStringWarm
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            : LinearGradient(
                                 colors: [
                                     Color(red: 0.88, green: 0.88, blue: 0.84),
                                     Color(red: 0.62, green: 0.62, blue: 0.58),
@@ -33,9 +61,8 @@ struct StringLineOverlay: View {
                                 endPoint: .bottom
                             )
                         )
-                        .frame(width: index < 3 ? 2.8 - CGFloat(index) * 0.35 : 1.4)
-                        .frame(height: clippedHeight)
-                        .position(x: grooveCenters[index], y: clippedTopY + clippedHeight / 2)
+                        .frame(width: stringWidth, height: clippedHeight)
+                        .position(x: centerX, y: midY)
                 }
             }
             .frame(width: safeCGFloat(geo.size.width), height: safeCGFloat(geo.size.height))
@@ -54,8 +81,9 @@ struct MiniTVFrame: View {
     var isDarkScreen: Bool = false
     var glowTint: Color? = nil
     var hitTestingEnabled: Bool = false
+    var consoleSkin: ConsoleSkin = .classic
 
-    init(text: String, width: CGFloat, height: CGFloat, fontScale: CGFloat, isDarkScreen: Bool = false, glowTint: Color? = nil, hitTestingEnabled: Bool = false) {
+    init(text: String, width: CGFloat, height: CGFloat, fontScale: CGFloat, isDarkScreen: Bool = false, glowTint: Color? = nil, hitTestingEnabled: Bool = false, consoleSkin: ConsoleSkin = .classic) {
         self.text = text
         self.width = width
         self.height = height
@@ -63,52 +91,55 @@ struct MiniTVFrame: View {
         self.isDarkScreen = isDarkScreen
         self.glowTint = glowTint
         self.hitTestingEnabled = hitTestingEnabled
+        self.consoleSkin = consoleSkin
     }
 
     var body: some View {
-        let bezelWidth = width + 24
-        let bezelHeight = height + 18
+        let bezelWidth = width + UIConstants.miniTVBezelInsetW
+        let bezelHeight = height + UIConstants.miniTVBezelInsetH
 
         return ZStack {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: UIConstants.consoleFrameRadius, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color(red: 0.08, green: 0.08, blue: 0.1), Color(red: 0.18, green: 0.18, blue: 0.2)],
+                        colors: consoleSkin == .tweed
+                            ? [Color(red: 0.96, green: 0.96, blue: 0.96), Color(red: 0.88, green: 0.88, blue: 0.88)]
+                            : [.screenDark, .screenDarkAlt],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
                 .shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: UIConstants.consoleFrameRadius, style: .continuous)
+                        .stroke(consoleSkin == .tweed ? Color.white.opacity(0.6) : Color.white.opacity(0.08), lineWidth: 1)
                 )
 
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.black.opacity(0.65), lineWidth: 3)
-                .padding(3)
+            RoundedRectangle(cornerRadius: UIConstants.consoleInnerBorderRadius, style: .continuous)
+                .stroke(consoleSkin == .tweed ? Color.white.opacity(0.55) : Color.black.opacity(0.65), lineWidth: 3)
+                .padding(UIConstants.consoleFramePadding)
 
             Group {
                 if isDarkScreen {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.consoleContentRadius, style: .continuous)
                         .fill(
                             LinearGradient(
-                                colors: [Color.black.opacity(0.95), Color(red: 0.07, green: 0.07, blue: 0.08), Color.black.opacity(0.95)],
+                                colors: [Color.black.opacity(0.95), .screenInner, Color.black.opacity(0.95)],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
                         .padding(8)
                 } else {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.consoleContentRadius, style: .continuous)
                         .fill(
                             RadialGradient(
                                 gradient: Gradient(stops: [
                                     .init(color: Color(white: 1.0, opacity: 0.85), location: 0.0),
-                                    .init(color: Color(red: 1.0, green: 0.96, blue: 0.70), location: 0.08),
-                                    .init(color: Color(red: 1.0, green: 0.78, blue: 0.12), location: 0.28),
-                                    .init(color: Color(red: 1.0, green: 0.56, blue: 0.00), location: 0.40),
-                                    .init(color: Color(red: 0.28, green: 0.12, blue: 0.00), location: 1.0)
+                                    .init(color: .glowWarm, location: 0.08),
+                                    .init(color: .glowOrange, location: 0.28),
+                                    .init(color: .glowDeep, location: 0.40),
+                                    .init(color: .glowBrown, location: 1.0)
                                 ]),
                                 center: .center,
                                 startRadius: 2,
@@ -120,9 +151,9 @@ struct MiniTVFrame: View {
             }
 
 
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: UIConstants.consoleInnerFrameRadius, style: .continuous)
                 .fill(Color.clear)
-                .padding(12)
+                .padding(UIConstants.consoleContentPadding)
 
             Text(text.prefix(1).uppercased() + text.dropFirst())
                 .font(.system(size: max(height * 0.78 * fontScale, 14), weight: .black, design: .default))
@@ -131,14 +162,14 @@ struct MiniTVFrame: View {
                 .allowsTightening(true)
                 .foregroundColor(isDarkScreen ? .white : .black)
                 .minimumScaleFactor(0.45)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, UIConstants.consoleContentPadding)
         }
         .frame(width: bezelWidth, height: bezelHeight)
         .overlay {
             if let glowTint {
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.consoleFrameRadius, style: .continuous)
                     .stroke(glowTint.opacity(0.78), lineWidth: 1.2)
-                    .padding(3)
+                    .padding(UIConstants.consoleFramePadding)
                     .shadow(color: glowTint.opacity(0.42), radius: 10)
             }
         }
@@ -150,15 +181,17 @@ struct MiniTVFrame: View {
 
 struct ScrewHeadView: View {
     let size: CGFloat
+    var consoleSkin: ConsoleSkin = .classic
 
     var body: some View {
         ZStack {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [
-                            Color(red: 0.72, green: 0.63, blue: 0.44),
-                            Color(red: 0.38, green: 0.31, blue: 0.18)
+                        colors: consoleSkin == .tweed ? [
+                            .chromeLight, .chromeBase
+                        ] : [
+                            .goldLight, .goldDark
                         ],
                         center: UnitPoint(x: 0.3, y: 0.25),
                         startRadius: size * 0.05,
@@ -182,17 +215,28 @@ struct ThumbButtonView: View {
     let diameter: CGFloat
     let label: String
     let state: ThumbGlowState
+    var consoleSkin: ConsoleSkin = .classic
 
     private var glowStops: [Gradient.Stop] {
         switch state {
         case .neutral:
-            return [
-                .init(color: Color(white: 1.0, opacity: 1.0), location: 0.0),
-                .init(color: Color(white: 1.0, opacity: 1.0), location: 0.12),
-                .init(color: Color(red: 0.95, green: 0.95, blue: 0.95), location: 0.34),
-                .init(color: Color(red: 0.60, green: 0.60, blue: 0.60), location: 0.54),
-                .init(color: Color(red: 0.25, green: 0.25, blue: 0.25), location: 1.0)
-            ]
+            if consoleSkin == .tweed {
+                return [
+                    .init(color: Color(white: 1.0, opacity: 1.0), location: 0.0),
+                    .init(color: Color(white: 1.0, opacity: 1.0), location: 0.12),
+                    .init(color: .chromeLight, location: 0.34),
+                    .init(color: .chromeMid, location: 0.54),
+                    .init(color: .chromeShadow, location: 1.0)
+                ]
+            } else {
+                return [
+                    .init(color: Color(white: 1.0, opacity: 1.0), location: 0.0),
+                    .init(color: Color(white: 1.0, opacity: 1.0), location: 0.12),
+                    .init(color: .glowWarm, location: 0.34),
+                    .init(color: .glowOrange, location: 0.54),
+                    .init(color: .glowBrown, location: 1.0)
+                ]
+            }
         case .orange:
             return [
                 .init(color: Color(white: 1.0, opacity: 1.0), location: 0.0),
@@ -233,12 +277,10 @@ struct ThumbButtonView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color(red: 1.0, green: 1.0, blue: 1.0),
-                                Color(red: 0.95, green: 0.95, blue: 0.95),
-                                Color(red: 0.55, green: 0.55, blue: 0.55),
-                                Color(red: 0.25, green: 0.25, blue: 0.25),
-                                Color(red: 0.65, green: 0.65, blue: 0.65)
+                            colors: consoleSkin == .tweed ? [
+                                .white, .chromeLight, .chromeBase, .chromeShadow, Color(red: 0.65, green: 0.65, blue: 0.65)
+                            ] : [
+                                .goldLight, .goldMid, .goldDark, .goldMidtone
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -292,10 +334,10 @@ struct ThumbButtonView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [
-                                Color(red: 1.0, green: 1.0, blue: 1.0),
-                                Color(red: 0.75, green: 0.75, blue: 0.75),
-                                Color(red: 0.30, green: 0.30, blue: 0.30)
+                            colors: consoleSkin == .tweed ? [
+                                .white, Color(red: 0.75, green: 0.75, blue: 0.75), Color(red: 0.30, green: 0.30, blue: 0.30)
+                            ] : [
+                                .goldLight, .goldMid, .goldDark
                             ],
                             center: UnitPoint(x: 0.35, y: 0.3),
                             startRadius: plunger * 0.03,
@@ -324,7 +366,7 @@ struct ThumbButtonView: View {
 
                 ForEach(0..<4, id: \.self) { index in
                     let angle = Angle.degrees(Double(index) * 90 + 45)
-                    ScrewHeadView(size: screwSize)
+                    ScrewHeadView(size: screwSize, consoleSkin: consoleSkin)
                         .offset(
                             x: cos(angle.radians) * screwOrbit,
                             y: sin(angle.radians) * screwOrbit
@@ -350,13 +392,94 @@ struct ThumbButtonView: View {
     }
 
     private var ringMetalStops: [Color] {
-        [
-            Color(red: 1.0, green: 1.0, blue: 1.0),
-            Color(red: 0.95, green: 0.95, blue: 0.95),
-            Color(red: 0.55, green: 0.55, blue: 0.55),
-            Color(red: 0.20, green: 0.20, blue: 0.20),
-            Color(red: 0.65, green: 0.65, blue: 0.65),
-            Color(red: 1.0, green: 1.0, blue: 1.0)
-        ]
+        if consoleSkin == .tweed {
+            return [
+                Color(red: 1.0, green: 1.0, blue: 1.0),
+                Color(red: 0.95, green: 0.95, blue: 0.95),
+                Color(red: 0.55, green: 0.55, blue: 0.55),
+                Color(red: 0.20, green: 0.20, blue: 0.20),
+                Color(red: 0.65, green: 0.65, blue: 0.65),
+                Color(red: 1.0, green: 1.0, blue: 1.0)
+            ]
+        } else {
+            return [
+                Color(red: 0.98, green: 0.9, blue: 0.66),
+                Color(red: 0.90, green: 0.74, blue: 0.40),
+                Color(red: 0.73, green: 0.55, blue: 0.26),
+                Color(red: 0.94, green: 0.82, blue: 0.53),
+                Color(red: 0.98, green: 0.9, blue: 0.66)
+            ]
+        }
+    }
+}
+
+// MARK: - Shared Menu Components
+
+struct GoldPickerRow<T: Hashable>: View {
+    let label: String
+    let options: [(label: String, value: T)]
+    @Binding var selection: T
+    var disabled: Bool = false
+
+    private let gold = Color.goldBorderMid
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .foregroundColor(disabled ? .white.opacity(0.3) : .white.opacity(0.7))
+            HStack(spacing: 8) {
+                ForEach(options, id: \.value) { option in
+                    let isSelected = selection == option.value
+                    Button(action: {
+                        guard !disabled else { return }
+                        selection = option.value
+                    }) {
+                        Text(option.label)
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
+                            .foregroundColor(isSelected ? .black : (disabled ? .white.opacity(0.3) : .white))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(isSelected ? gold : Color.black.opacity(0.6))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(isSelected ? gold : gold.opacity(disabled ? 0.2 : 0.45), lineWidth: 1.5)
+                            )
+                    }
+                    .disabled(disabled)
+                    .accessibilityLabel(option.label)
+                    .accessibilityHint(isSelected ? "Currently selected" : "Select \(option.label)")
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct MenuSection<Content: View>: View {
+    let title: String
+    let gold: Color
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.system(size: 13, weight: .black, design: .monospaced))
+                .foregroundColor(gold)
+                .tracking(2)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+
+            Divider()
+                .background(gold.opacity(0.35))
+                .padding(.horizontal, 20)
+
+            VStack(alignment: .leading, spacing: 14) {
+                content()
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
+        }
     }
 }

@@ -49,6 +49,7 @@ final class AudioSettings {
     var delayLevel: AudioEffectLevel = .off
     var selectedBackingArrangement: BackingArrangementPreset = .epDrumsPad
     var selectedBackingTrackID: String? = nil
+    var startingBPM: Int = 120
     var tempoIncreasePerRound: TempoIncreasePerRound = .off
 
     func selectInitialBackingTrackIfNeeded(from tracks: [BackingTrack]) {

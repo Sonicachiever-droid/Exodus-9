@@ -23,3 +23,13 @@ func guitarNoteName(forString string: Int, fret: Int, useFlats: Bool) -> String 
     let scale = useFlats ? chromaticFlats : chromaticSharps
     return scale[noteIndex]
 }
+
+func guitarNoteDisplayText(_ note: String) -> String {
+    note
+        .replacingOccurrences(of: "#", with: "♯")
+        .replacingOccurrences(of: "b", with: "♭")
+}
+
+func guitarNoteContainsAccidental(_ note: String) -> Bool {
+    note.contains("#") || note.contains("b")
+}

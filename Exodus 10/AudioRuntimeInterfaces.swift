@@ -23,5 +23,5 @@ protocol GuitarNotePlaying {
     func playChord(midiNotes: [Int], velocity: Float, sustainMultiplier: Double) -> TimeInterval
 }
 
-extension SimpleMIDIEngine: BackingTrackPlaying {}
-extension GuitarNoteEngine: GuitarNotePlaying {}
+extension SharedAudioEngine: BackingTrackPlaying {}
+extension SharedAudioEngine: GuitarNotePlaying {}
