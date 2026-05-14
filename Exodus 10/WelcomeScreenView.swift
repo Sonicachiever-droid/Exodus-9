@@ -62,6 +62,7 @@ struct WelcomeScreenView: View {
                             subtitle: "6-button note training",
                             action: onSelectBeginner
                         )
+                        .buttonStyle(.plain)
                         .accessibilityLabel(A11y.Welcome.beginnerButton)
                         .accessibilityHint(A11y.Welcome.beginnerHint)
                         WelcomeConsoleButton(
@@ -69,6 +70,7 @@ struct WelcomeScreenView: View {
                             subtitle: "Memory-based recall",
                             action: onSelectMaestro
                         )
+                        .buttonStyle(.plain)
                         .accessibilityLabel(A11y.Welcome.maestroButton)
                         .accessibilityHint(A11y.Welcome.maestroHint)
 
@@ -83,6 +85,7 @@ struct WelcomeScreenView: View {
                             .foregroundColor(.goldBorderMid)
                             .padding(.vertical, 15)
                         }
+                        .buttonStyle(.plain)
                         .accessibilityLabel(A11y.Welcome.overviewButton)
                         .accessibilityHint(A11y.Welcome.overviewHint)
                     }
