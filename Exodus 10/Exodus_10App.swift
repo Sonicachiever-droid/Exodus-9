@@ -305,37 +305,39 @@ private struct Exodus10MenuSheet: View {
                                     .accessibilityLabel(A11y.Settings.buyHighFrets)
                                     .accessibilityHint(A11y.Settings.buyHighFretsHint(canAfford: balancePoints >= 500))
                                 }
-                                // Landscape row
-                                if landscapePurchased {
-                                    GoldPickerRow(
-                                        label: "Layout",
-                                        options: [
-                                            (label: "Portrait", value: Orientation.portrait.rawValue),
-                                            (label: "Landscape", value: Orientation.landscape.rawValue)
-                                        ],
-                                        selection: $orientationRawValue
-                                    )
-                                } else {
-                                    Button(action: {
-                                        if balancePoints >= 500 {
-                                            balancePoints -= 500
-                                            landscapePurchased = true
+                                // Landscape row (Maestro only)
+                                if layoutMode == .maestro {
+                                    if landscapePurchased {
+                                        GoldPickerRow(
+                                            label: "Layout",
+                                            options: [
+                                                (label: "Portrait", value: Orientation.portrait.rawValue),
+                                                (label: "Landscape", value: Orientation.landscape.rawValue)
+                                            ],
+                                            selection: $orientationRawValue
+                                        )
+                                    } else {
+                                        Button(action: {
+                                            if balancePoints >= 500 {
+                                                balancePoints -= 500
+                                                landscapePurchased = true
+                                            }
+                                        }) {
+                                            HStack {
+                                                Text("Landscape Mode")
+                                                    .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                                    .foregroundColor(balancePoints >= 500 ? .white.opacity(0.7) : .white.opacity(0.3))
+                                                Spacer()
+                                                Text("$500")
+                                                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                                    .foregroundColor(balancePoints >= 500 ? gold : .red)
+                                            }
                                         }
-                                    }) {
-                                        HStack {
-                                            Text("Landscape Mode")
-                                                .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                                .foregroundColor(balancePoints >= 500 ? .white.opacity(0.7) : .white.opacity(0.3))
-                                            Spacer()
-                                            Text("$500")
-                                                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                                .foregroundColor(balancePoints >= 500 ? gold : .red)
-                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(balancePoints < 500)
+                                        .accessibilityLabel(A11y.Settings.buyLandscape)
+                                        .accessibilityHint(A11y.Settings.buyLandscapeHint(canAfford: balancePoints >= 500))
                                     }
-                                    .buttonStyle(.plain)
-                                    .disabled(balancePoints < 500)
-                                    .accessibilityLabel(A11y.Settings.buyLandscape)
-                                    .accessibilityHint(A11y.Settings.buyLandscapeHint(canAfford: balancePoints >= 500))
                                 }
                             }
                             MenuSection(title: "SKINS", gold: gold) {
